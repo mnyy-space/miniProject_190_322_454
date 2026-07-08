@@ -1,60 +1,132 @@
 import 'package:flutter/material.dart';
 
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:my_app/config/app_config.dart';
+import 'package:my_app/screens/home_screen.dart';
+import 'package:my_app/utils/date_util.dart';
+import "package:shared_preferences/shared_preferences.dart";
+import 'package:my_app/screens/home_screen.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
-  @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>(); //final = can't edit
 
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _usernameValueController = TextEditingController();
+  final _passwordValueController = TextEditingController();
 
-  bool _obscurePassword = true;
-  bool _isLoading = false;
-  bool _rememberMe = false;
+  Future<(bool, String, String)> _authenRequest() async {
+    String username = _usernameValueController.text;
+    DateTime now = DateTime.now();
+    String formattedDeteString = DateUtil().getFormattedDate(now);
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+    String combinedString = "$username&$formattedDeteString";
+    print(combinedString);
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+    String authenRequestString = sha256
+        .convert(utf8.encode(combinedString))
+        .toString();
 
-    setState(() {
-      _isLoading = true;
-    });
+    print(authenRequestString);
 
-    // จำลอง API Login
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Login successful'),
-      ),
+    final response = await http.post(
+      Uri.parse("${AppConfig.apiBaseUri}/authen/authen_request"),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{'authen_request': authenRequestString}),
     );
 
-    // TODO: Navigate to Home Screen
-    // Navigator.pushReplacement(...)
+    final json = jsonDecode(response.body);
+
+    print(json);
+
+    return (
+      json["isError"] as bool,
+      json["data"] as String,
+      json["errorMessage"] as String,
+    );
   }
 
-  void _googleSignIn() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Google Sign In clicked'),
-      ),
+  void _doLogin(BuildContext context) async {
+    var (isError, authenToken, errorMessage) = await _authenRequest();
+
+    if (isError) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(content: Text(errorMessage));
+        },
+      );
+    } else {
+      var result = await _accessRequest(authenToken);
+
+      print(result);
+
+      if (!result.isError) {
+        //เปลี่ยนหน้าไป Home Screen
+        Navigator.push(
+          context, 
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(content: Text(result.errorMessage));
+          },
+        );
+      }
+    }
+  }
+
+  Future<({bool isError, String data, String errorMessage})> _accessRequest(
+    String authenToken,
+  ) async {
+    String username = _usernameValueController.text;
+    String password = _passwordValueController.text;
+    String passwordEncode = sha256.convert(utf8.encode(password)).toString();
+    String combinedString = "$username&$passwordEncode&$authenToken";
+    String authenSignature = sha256
+        .convert(utf8.encode(combinedString))
+        .toString();
+
+    print(combinedString);
+    print(authenSignature);
+
+    final response = await http.post(
+      Uri.parse("${AppConfig.apiBaseUri}/authen/access_request"),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'authen_signature': authenSignature,
+        'authen_token': authenToken,
+      }),
+    );
+
+    final json = jsonDecode(response.body);
+
+    print(json);
+
+    if (!json["isError"]) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      await prefs.setString("access_token", json["data"]["access_token"]);
+      await prefs.setString("username", _usernameValueController.text);
+      await prefs.setString("image_url", json["data"]["image_url"]);
+    }
+
+    return (
+      isError: json["isError"] as bool,
+      data: json["data"]["access_token"] as String,
+      errorMessage: json["errorMessage"] as String,
     );
   }
 
@@ -129,29 +201,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 32),
 
                           TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
+                            controller: _usernameController,
                             decoration: InputDecoration(
-                              labelText: 'Email',
-                              hintText: 'example@email.com',
-                              prefixIcon: const Icon(Icons.email_outlined),
+                              labelText: 'Username',
+                              hintText: 'username',
+                              prefixIcon: const Icon(Icons.person_outline),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter your email';
+                                return 'กรุณากรอก Username';
                               }
-
-                              final emailRegex = RegExp(
-                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                              );
-
-                              if (!emailRegex.hasMatch(value.trim())) {
-                                return 'Please enter a valid email';
-                              }
-
                               return null;
                             },
                           ),
@@ -182,13 +244,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
+                                return 'กรุณากรอก Password';
                               }
-
-                              if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
-                              }
-
                               return null;
                             },
                           ),
@@ -206,13 +263,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                               ),
                               const Text('Remember Me'),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: () {
-                                  // TODO: Forgot Password
-                                },
-                                child: const Text('Forgot Password?'),
-                              ),
                             ],
                           ),
 
@@ -246,38 +296,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 24),
 
                           Row(
-                            children: const [
-                              Expanded(child: Divider()),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 12),
-                                child: Text('OR'),
-                              ),
-                              Expanded(child: Divider()),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          SizedBox(
-                            width: double.infinity,
-                            height: 54,
-                            child: OutlinedButton.icon(
-                              onPressed: _googleSignIn,
-                              icon: const Icon(Icons.g_mobiledata, size: 28),
-                              label: const Text(
-                                'Continue with Google',
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Text(
@@ -304,3 +322,5 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+
