@@ -98,7 +98,6 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            // --- ตรงนี้ครับริน พี่เพิ่ม ConstrainedBox มาให้แล้ว ---
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Card(
