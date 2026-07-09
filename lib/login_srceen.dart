@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:halalsefllearning/config/app_config.dart';
 import 'package:halalsefllearning/utils/date_util.dart';
 import "package:shared_preferences/shared_preferences.dart";
+import 'package:halalsefllearning/screens/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,6 +67,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!result.isError) {
         print("Login Success!");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
       } else {
         showDialog(
           context: context,
@@ -135,10 +140,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.flutter_dash,
-                          size: 80,
-                          color: Color.fromARGB(255, 255, 0, 255),
+                        Image.asset(
+                          'assets/logo1.png',
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.contain,
                         ),
                         const SizedBox(height: 24),
                         TextFormField(
