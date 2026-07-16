@@ -1,7 +1,36 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
-class HomeScreen extends StatelessWidget {
-const HomeScreen({super.key});
+import 'package:flutter/material.dart';
+import 'package:halalsefllearning/widgets/skills_card.dart';
+import 'package:halalsefllearning/api/app_api.dart';
+import 'package:halalsefllearning/models/skills_model.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState(); 
+  
+}
+
+class _HomeScreenState extends State<HomeScreen>{
+  List<SkillsModel> skillModelStore = [];
+  bool isLoading = true;
+  void _fetchSkill() async{
+      var response = await AppApi.get("/skill");
+      Map<String, dynamic> json = jsonDecode(response.body); 
+      SkillsResponse skillsResponse = SkillsResponse.fromJson(json);
+
+      setState(() {
+        skillModelStore = skillsResponse.data;
+        isLoading = false;
+      });
+  }
+
+  @override
+  void initState(){
+    _fetchSkill();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,19 +40,36 @@ const HomeScreen({super.key});
       appBar: AppBar(
         title: const Text('Home'),
       ),
-      body: const Center(
-        child: Text(
-          'Home Screen', 
-          style: TextStyle(
-            fontSize: 24, 
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : skillModelStore.isEmpty
+            ? const Center(child: Text("data is not found"))
+            : GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1
+              ),
+              itemCount: skillModelStore.length,
+              itemBuilder: (contextm, index){
+                final skill = skillModelStore[index];
+                return SkillsCard(skill : skill);
+              },
+            )
+      // body: const Center(
+      //   child: Text(
+      //     'Home Screen', 
+      //     style: TextStyle(
+      //       fontSize: 24, 
+      //       fontWeight: FontWeight.bold,
+      //     ),
+      //   ),
+      // ),
     );
   }
 }
-
 
 //   @override
 //   Widget build(BuildContext context) {

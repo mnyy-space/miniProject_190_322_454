@@ -37,12 +37,16 @@ class _LoginScreenState extends State<LoginScreen> {
     String authenRequestString = sha256
         .convert(utf8.encode(combinedString))
         .toString();
+    
+    print("${AppConfig.apiBaseUri}/authen/authen_request");
 
     final response = await http.post(
       Uri.parse("${AppConfig.apiBaseUri}/authen/authen_request"),
       headers: {'Content-Type': 'application/json; charset=UTF-8'},
       body: jsonEncode({'authen_request': authenRequestString}),
     );
+
+    
 
     final json = jsonDecode(response.body);
     return (
