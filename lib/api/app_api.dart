@@ -1,6 +1,5 @@
 import 'package:halalsefllearning/config/app_config.dart';
 import 'package:http/http.dart' as http;
-import '../config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppApi {
