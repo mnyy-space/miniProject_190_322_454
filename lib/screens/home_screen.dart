@@ -16,14 +16,28 @@ class _HomeScreenState extends State<HomeScreen>{
   List<SkillsModel> skillModelStore = [];
   bool isLoading = true;
   void _fetchSkill() async{
-      var response = await AppApi.get("/skill");
-      Map<String, dynamic> json = jsonDecode(response.body); 
-      SkillsResponse skillsResponse = SkillsResponse.fromJson(json);
+      try {
+        var response = await AppApi.get("skill");
+        if (response.statusCode == 200) {
+          Map<String, dynamic> json = jsonDecode(response.body); 
+          SkillsResponse skillsResponse = SkillsResponse.fromJson(json);
 
-      setState(() {
-        skillModelStore = skillsResponse.data;
-        isLoading = false;
-      });
+          setState(() {
+            skillModelStore = skillsResponse.data;
+            isLoading = false;
+          });
+        } else {
+          print("Failed to load skills, status: ${response.statusCode}");
+          setState(() {
+            isLoading = false;
+          });
+        }
+      } catch (e) {
+        print("Error fetching skills: $e");
+        setState(() {
+          isLoading = false;
+        });
+      }
   }
 
   @override

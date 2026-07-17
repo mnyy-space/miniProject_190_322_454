@@ -29,12 +29,17 @@
     });
 
     factory SkillsResponse.fromJson(Map<String, dynamic> json) {
+      List<SkillsModel> skillList = [];
+      if (json['data'] != null && json['data'] is List) {
+        skillList = (json['data'] as List)
+            .map((item) => SkillsModel.fromJson(item))
+            .toList();
+      }
+
       return SkillsResponse(
-        isError: json['isError'],
-        data: (json['data'] as List)
-          .map((item) => SkillsModel.fromJson(item))
-          .toList(),
-        errorMessage: json['errorMessage'],
+        isError: json['isError'] ?? false,
+        data: skillList,
+        errorMessage: json['errorMessage'] ?? "",
       );
     }
   }
