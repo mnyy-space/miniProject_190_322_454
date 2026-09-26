@@ -1,4 +1,3 @@
-  import 'dart:async';
 
   class SkillsModel {
     int skillId = 0;

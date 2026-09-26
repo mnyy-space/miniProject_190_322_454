@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:halalsefllearning/config/app_config.dart';
 import 'package:halalsefllearning/utils/date_util.dart';
 import "package:shared_preferences/shared_preferences.dart";
+import 'package:halalsefllearning/screens/admin/admin_layout.dart';
 import 'package:halalsefllearning/screens/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -70,11 +71,18 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = false);
 
       if (!result.isError) {
-        print("Login Success!");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        print("Login Success with role: ${result.roleName}");
+        if (result.roleName.toLowerCase() == "admin") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLayout()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
       } else {
         showDialog(
           context: context,
@@ -84,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<({bool isError, String data, String errorMessage})> _accessRequest(
+  Future<({bool isError, String data, String roleName, String errorMessage})> _accessRequest(
     String authenToken,
   ) async {
     String username = _usernameController.text;
@@ -105,14 +113,18 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     final json = jsonDecode(response.body);
+    String roleName = "";
     if (!json["isError"]) {
+      roleName = json["data"]?["role_name"] as String? ?? "";
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString("access_token", json["data"]["accessToken"]);
+      await prefs.setString("access_token", json["data"]["accessToken"] ?? "");
       await prefs.setString("username", _usernameController.text);
+      await prefs.setString("role_name", roleName);
     }
     return (
       isError: json["isError"] as bool,
       data: json["data"]?["accessToken"] as String? ?? "",
+      roleName: roleName,
       errorMessage: json["errorMessage"] as String? ?? "Login failed",
     );
   }
