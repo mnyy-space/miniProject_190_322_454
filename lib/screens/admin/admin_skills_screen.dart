@@ -24,7 +24,7 @@ class _AdminSkillsScreenState extends State<AdminSkillsScreen> {
   Future<void> _loadSkills() async {
     setState(() => _isLoading = true);
     try {
-      final response = await AppApi.get('skill');
+      final response = await AppApi.get('admin/skill');
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         if (json['data'] != null && json['data'] is List) {
@@ -33,13 +33,15 @@ class _AdminSkillsScreenState extends State<AdminSkillsScreen> {
             _skills = list.map((item) {
               final id = item['skill_id'] ?? 0;
               final name = item['skill_name'] ?? '';
+              final code = item['skill_code'] ?? _generateSkillCode(name);
+              final isActive = (item['is_active'] == 1 || item['is_active'] == true || item['is_active'] == '1');
               return SkillItemData(
                 id: id,
-                code: _generateSkillCode(name),
+                code: code,
                 name: name,
                 tier: 'Basic',
-                prerequisite: id == 1 ? 'Inheritance & Polymorphism' : '—',
-                isActive: true,
+                prerequisite: '—',
+                isActive: isActive,
               );
             }).toList();
             _isLoading = false;
@@ -347,32 +349,29 @@ class _AdminSkillsScreenState extends State<AdminSkillsScreen> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
-              onPressed: () {
-                if (nameController.text.trim().isEmpty) return;
+              onPressed: () async {
+                final nameText = nameController.text.trim();
+                final codeText = codeController.text.trim();
+                if (nameText.isEmpty) return;
 
-                setState(() {
+                final body = {
+                  'skill_code': codeText.isEmpty ? nameText.toUpperCase() : codeText,
+                  'skill_name': nameText,
+                  'is_active': isActive ? 1 : 0,
+                };
+
+                try {
                   if (existingSkill == null) {
-                    _skills.add(
-                      SkillItemData(
-                        id: _skills.length + 1,
-                        code: codeController.text.trim().isEmpty
-                            ? nameController.text.trim().toUpperCase()
-                            : codeController.text.trim(),
-                        name: nameController.text.trim(),
-                        tier: selectedTier,
-                        prerequisite: prerequisite,
-                        isActive: isActive,
-                      ),
-                    );
+                    await AppApi.post('admin/skill', body);
                   } else {
-                    existingSkill.code = codeController.text.trim();
-                    existingSkill.name = nameController.text.trim();
-                    existingSkill.tier = selectedTier;
-                    existingSkill.prerequisite = prerequisite;
-                    existingSkill.isActive = isActive;
+                    await AppApi.put('admin/skill/${existingSkill.id}', body);
                   }
-                });
-                Navigator.pop(context);
+                } catch (e) {
+                  debugPrint('Error saving skill: $e');
+                }
+
+                if (mounted) Navigator.pop(context);
+                _loadSkills();
               },
               child: const Text('บันทึก'),
             ),
@@ -765,10 +764,17 @@ class _AdminSkillsScreenState extends State<AdminSkillsScreen> {
                           Switch(
                             value: skill.isActive,
                             activeColor: const Color(0xFF10B981),
-                            onChanged: (val) {
+                            onChanged: (val) async {
                               setState(() {
                                 skill.isActive = val;
                               });
+                              try {
+                                await AppApi.patch('admin/skill/${skill.id}/status', {
+                                  'is_active': val ? 1 : 0,
+                                });
+                              } catch (e) {
+                                debugPrint('Error updating skill status: $e');
+                              }
                             },
                           ),
                           const SizedBox(width: 4),
