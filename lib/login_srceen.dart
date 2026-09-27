@@ -6,7 +6,7 @@ import 'package:halalsefllearning/config/app_config.dart';
 import 'package:halalsefllearning/utils/date_util.dart';
 import "package:shared_preferences/shared_preferences.dart";
 import 'package:halalsefllearning/screens/admin/admin_layout.dart';
-import 'package:halalsefllearning/screens/home_screen.dart';
+import 'package:halalsefllearning/screens/user_main_layout.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const UserMainLayout()),
           );
         }
       } else {
