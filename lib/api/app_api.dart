@@ -72,4 +72,31 @@ class AppApi {
     print("DELETE: $fullUrl");
     return await http.delete(Uri.parse(fullUrl), headers: headers);
   }
+
+  // แปลง response ที่อยู่ในรูป { isError, data, errorMessage } แล้วคืนค่า data
+  // ถ้า HTTP status ไม่ใช่ 2xx หรือ isError เป็น true จะ throw AppApiException
+  static dynamic unwrap(http.Response response) {
+    dynamic json;
+    try {
+      json = jsonDecode(response.body);
+    } catch (_) {
+      throw AppApiException('HTTP ${response.statusCode}: ${response.body}');
+    }
+    final bool ok = response.statusCode >= 200 && response.statusCode < 300;
+    if (!ok || (json is Map && json['isError'] == true)) {
+      final message = json is Map
+          ? (json['errorMessage'] ?? json['error'] ?? 'HTTP ${response.statusCode}')
+          : 'HTTP ${response.statusCode}';
+      throw AppApiException(message.toString());
+    }
+    return json is Map ? json['data'] : json;
+  }
+}
+
+class AppApiException implements Exception {
+  final String message;
+  AppApiException(this.message);
+
+  @override
+  String toString() => message;
 }

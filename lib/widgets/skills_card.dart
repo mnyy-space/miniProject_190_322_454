@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/models/skills_model.dart';
+import 'package:halalsefllearning/screens/sessions_screen_list.dart';
 
 class SkillsCard extends StatelessWidget {
   const SkillsCard({
@@ -7,6 +8,11 @@ class SkillsCard extends StatelessWidget {
     required this.skill,
     this.index = 0,
   });
+
+  void _onPress(int id, context) async{
+      await Navigator.push(context, 
+      MaterialPageRoute(builder: (context) => SessionsScreenList(skillId: id)));
+  }
 
   final SkillsModel skill;
   final int index;
@@ -39,6 +45,7 @@ class SkillsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
+        border: BoxBorder.all(color:Colors.black26),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1E293B).withOpacity(0.05),
@@ -50,7 +57,9 @@ class SkillsCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: () {
+            _onPress(skill.skillId, context);
+          },
           borderRadius: BorderRadius.circular(24),
           child: Padding(
             padding: const EdgeInsets.all(16),

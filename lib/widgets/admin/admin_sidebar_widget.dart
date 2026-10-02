@@ -173,16 +173,19 @@ class AdminSidebarWidget extends StatelessWidget {
                               : const Color(0xFF64748B),
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          item['title'] as String,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? const Color(0xFF1D4ED8)
-                                : const Color(0xFF334155),
+                        Flexible(
+                          child: Text(
+                            item['title'] as String,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? const Color(0xFF1D4ED8)
+                                  : const Color(0xFF334155),
+                            ),
                           ),
                         ),
                       ],
