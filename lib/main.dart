@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/screens/admin/admin_layout.dart';
+import 'package:halalsefllearning/screens/login_srceen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,7 +21,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const AdminLayout(),
+      home: const LoginScreen(),
     );
   }
 }
