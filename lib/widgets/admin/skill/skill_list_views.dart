@@ -22,7 +22,11 @@ class SkillDataTable extends StatelessWidget {
   final List<SkillItemData> skills;
   final SkillRowCallbacks callbacks;
 
-  const SkillDataTable({super.key, required this.skills, required this.callbacks});
+  const SkillDataTable({
+    super.key,
+    required this.skills,
+    required this.callbacks,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +35,6 @@ class SkillDataTable extends StatelessWidget {
         DataColumn(label: Text('Skill code')),
         DataColumn(label: Text('Skill')),
         DataColumn(label: Text('Tier')),
-        DataColumn(label: Text('Prerequisite')),
         DataColumn(label: Text('Actions')),
         DataColumn(label: Text('สถานะ')),
       ],
@@ -65,11 +68,6 @@ class SkillDataTable extends StatelessWidget {
         ),
         DataCell(AdminTag(skill.tier, tone: AdminTagTone.green)),
         DataCell(
-          skill.prerequisite == '—'
-              ? const Text('—', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 16))
-              : AdminTag(skill.prerequisite),
-        ),
-        DataCell(
           AdminRowActions(
             onView: () => callbacks.onView(skill),
             onEdit: () => callbacks.onEdit(skill),
@@ -92,7 +90,11 @@ class SkillMobileCard extends StatelessWidget {
   final SkillItemData skill;
   final SkillRowCallbacks callbacks;
 
-  const SkillMobileCard({super.key, required this.skill, required this.callbacks});
+  const SkillMobileCard({
+    super.key,
+    required this.skill,
+    required this.callbacks,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -137,22 +139,21 @@ class SkillMobileCard extends StatelessWidget {
         Row(
           children: [
             AdminTag(skill.tier, tone: AdminTagTone.green, dense: true),
-            const SizedBox(width: 8),
-            Expanded(
-              child: skill.prerequisite == '—'
-                  ? const SizedBox.shrink()
-                  : Text(
-                      'Req: ${skill.prerequisite}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-            ),
+            const Spacer(),
             IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF2563EB)),
+              icon: const Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: Color(0xFF2563EB),
+              ),
               onPressed: () => callbacks.onEdit(skill),
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20, color: Color(0xFFDC2626)),
+              icon: const Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: Color(0xFFDC2626),
+              ),
               onPressed: () => callbacks.onDelete(skill),
             ),
           ],

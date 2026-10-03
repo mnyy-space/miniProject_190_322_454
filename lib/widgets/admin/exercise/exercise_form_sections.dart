@@ -102,18 +102,22 @@ class ChoiceOptionsField extends StatelessWidget {
   final List<TextEditingController> controllers;
   final int correctIndex;
   final ValueChanged<int> onCorrectIndexChanged;
+  final VoidCallback onAdd;
+  final ValueChanged<int> onRemove;
 
   const ChoiceOptionsField({
     super.key,
     required this.controllers,
     required this.correctIndex,
     required this.onCorrectIndexChanged,
+    required this.onAdd,
+    required this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
     return AdminLabeledField(
-      label: 'ตัวเลือก (เลือกวงกลมหน้าข้อที่ถูกต้อง)',
+      label: 'ตัวเลือก ${controllers.length}/4 (เลือกข้อที่ถูกต้อง)',
       child: RadioGroup<int>(
         groupValue: correctIndex,
         onChanged: (val) => onCorrectIndexChanged(val ?? 0),
@@ -133,9 +137,27 @@ class ChoiceOptionsField extends StatelessWidget {
                         ),
                       ),
                     ),
+                    IconButton(
+                      key: ValueKey('remove-choice-$i'),
+                      tooltip: 'ลบตัวเลือก ${String.fromCharCode(65 + i)}',
+                      onPressed: controllers.length > 2
+                          ? () => onRemove(i)
+                          : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                      color: const Color(0xFFDC2626),
+                    ),
                   ],
                 ),
               ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const ValueKey('add-choice'),
+                onPressed: controllers.length < 4 ? onAdd : null,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('เพิ่มตัวเลือก'),
+              ),
+            ),
           ],
         ),
       ),

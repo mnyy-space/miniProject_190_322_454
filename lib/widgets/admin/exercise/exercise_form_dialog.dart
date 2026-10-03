@@ -10,7 +10,11 @@ class ExerciseFormDialog extends StatefulWidget {
   final ExerciseItemData? existingExercise;
   final List<ExerciseSkillOption> skillOptions;
 
-  const ExerciseFormDialog({super.key, this.existingExercise, required this.skillOptions});
+  const ExerciseFormDialog({
+    super.key,
+    this.existingExercise,
+    required this.skillOptions,
+  });
 
   @override
   State<ExerciseFormDialog> createState() => _ExerciseFormDialogState();
@@ -23,6 +27,9 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
   final List<TextEditingController> _choiceControllers = [];
   List<int?> _choiceIds = [];
   int _correctChoiceIndex = 0;
+
+  static const int _minChoices = 2;
+  static const int _maxChoices = 4;
 
   late int _selectedSkillId;
   String _selectedStatus = 'active';
@@ -42,16 +49,21 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
         ? e.skillId
         : widget.skillOptions.first.id;
 
-    // ตัวเลือกของ CHOICE (เริ่มต้นอย่างน้อย 4 ช่อง)
-    final initialChoices =
-        (e != null && e.choices.isNotEmpty) ? e.choices : List.filled(4, '');
-    _choiceIds = (e != null && e.choiceIds.isNotEmpty)
-        ? List<int?>.from(e.choiceIds)
-        : List<int?>.filled(initialChoices.length, null);
+    final initialChoices = e?.choices.take(_maxChoices).toList() ?? [];
+    while (initialChoices.length < _minChoices) {
+      initialChoices.add('');
+    }
+    _choiceIds = e?.choiceIds.take(initialChoices.length).toList() ?? [];
+    while (_choiceIds.length < initialChoices.length) {
+      _choiceIds.add(null);
+    }
     for (final text in initialChoices) {
       _choiceControllers.add(TextEditingController(text: text));
     }
-    _correctChoiceIndex = e?.correctChoiceIndex ?? 0;
+    _correctChoiceIndex = (e?.correctChoiceIndex ?? 0).clamp(
+      0,
+      initialChoices.length - 1,
+    );
     _selectedStatus = (e?.isActive ?? true) ? 'active' : 'inactive';
   }
 
@@ -68,7 +80,10 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
 
   void _showMessage(String message, {Duration? duration}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: duration ?? const Duration(seconds: 4)),
+      SnackBar(
+        content: Text(message),
+        duration: duration ?? const Duration(seconds: 4),
+      ),
     );
   }
 
@@ -79,11 +94,36 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
 
   /// ตรวจความถูกต้องของฟอร์ม คืนข้อความ error หรือ null ถ้าผ่าน
   String? _validate(List<String> choiceTexts) {
-    if (_descriptionController.text.trim().isEmpty) return 'กรุณากรอกคำอธิบายโจทย์';
-    if (choiceTexts.length < 2 || choiceTexts.any((t) => t.isEmpty)) {
-      return 'กรุณากรอกตัวเลือกให้ครบอย่างน้อย 2 ข้อ';
+    if (_descriptionController.text.trim().isEmpty)
+      return 'กรุณากรอกคำอธิบายโจทย์';
+    if (choiceTexts.length < _minChoices || choiceTexts.length > _maxChoices) {
+      return 'ต้องมีตัวเลือกอย่างน้อย $_minChoices และไม่เกิน $_maxChoices ข้อ';
+    }
+    if (choiceTexts.any((text) => text.isEmpty)) {
+      return 'กรุณากรอกตัวเลือกให้ครบทุกข้อ';
     }
     return null;
+  }
+
+  void _addChoice() {
+    if (_choiceControllers.length >= _maxChoices) return;
+    setState(() {
+      _choiceControllers.add(TextEditingController());
+      _choiceIds.add(null);
+    });
+  }
+
+  void _removeChoice(int index) {
+    if (_choiceControllers.length <= _minChoices) return;
+    setState(() {
+      _choiceControllers.removeAt(index).dispose();
+      _choiceIds.removeAt(index);
+      if (_correctChoiceIndex == index) {
+        _correctChoiceIndex = index.clamp(0, _choiceControllers.length - 1);
+      } else if (_correctChoiceIndex > index) {
+        _correctChoiceIndex--;
+      }
+    });
   }
 
   void _save() {
@@ -102,7 +142,9 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
       language: 'Python',
       level: int.tryParse(_levelController.text.trim()) ?? 1,
       skillId: _selectedSkillId,
-      skill: widget.skillOptions.firstWhere((s) => s.id == _selectedSkillId).name,
+      skill: widget.skillOptions
+          .firstWhere((s) => s.id == _selectedSkillId)
+          .name,
       expectedTime: 3,
       timeUnit: 'นาที (minute)',
       type: 'CHOICE',
@@ -184,7 +226,8 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
             child: AdminDropdownField<int>(
               value: _selectedSkillId,
               items: widget.skillOptions.map((s) => s.id).toList(),
-              displayLabel: (id) => widget.skillOptions.firstWhere((s) => s.id == id).name,
+              displayLabel: (id) =>
+                  widget.skillOptions.firstWhere((s) => s.id == id).name,
               onChanged: (val) => setState(() => _selectedSkillId = val),
             ),
           ),
@@ -202,7 +245,10 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
         ChoiceOptionsField(
           controllers: _choiceControllers,
           correctIndex: _correctChoiceIndex,
-          onCorrectIndexChanged: (val) => setState(() => _correctChoiceIndex = val),
+          onCorrectIndexChanged: (val) =>
+              setState(() => _correctChoiceIndex = val),
+          onAdd: _addChoice,
+          onRemove: _removeChoice,
         ),
       ],
     );
@@ -271,7 +317,10 @@ class _DialogFooter extends StatelessWidget {
             ),
             child: const Text(
               'ยกเลิก',
-              style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -282,9 +331,14 @@ class _DialogFooter extends StatelessWidget {
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: const Text('บันทึก', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text(
+              'บันทึก',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
