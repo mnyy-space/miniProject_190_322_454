@@ -3,6 +3,7 @@ import 'package:halalsefllearning/screens/login_srceen.dart';
 import 'package:halalsefllearning/screens/admin/admin_exercises_screen.dart';
 import 'package:halalsefllearning/screens/admin/admin_goals_screen.dart';
 import 'package:halalsefllearning/screens/admin/admin_skills_screen.dart';
+import 'package:halalsefllearning/screens/admin/admin_sessions_screen.dart';
 import 'package:halalsefllearning/widgets/admin/admin_sidebar_widget.dart';
 import 'package:halalsefllearning/widgets/admin/admin_topbar_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,12 +23,14 @@ class _AdminLayoutState extends State<AdminLayout> {
     'จัดการ Skill',
     'จัดการ Goal',
     'จัดการ Exercise',
+    'จัดการ Session',
   ];
 
   final List<Widget> _screens = const [
     AdminSkillsScreen(),
     AdminGoalsScreen(),
     AdminExercisesScreen(),
+    AdminSessionsScreen(),
   ];
 
   void _onMenuItemSelected(int index) {
@@ -44,9 +47,7 @@ class _AdminLayoutState extends State<AdminLayout> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
             Icon(Icons.logout_rounded, color: Color(0xFFEF4444)),
@@ -61,7 +62,10 @@ class _AdminLayoutState extends State<AdminLayout> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B))),
+            child: const Text(
+              'ยกเลิก',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(

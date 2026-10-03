@@ -15,18 +15,10 @@ class AdminSidebarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> menuItems = [
-      {
-        'title': 'จัดการ Skill',
-        'icon': Icons.folder_rounded,
-      },
-      {
-        'title': 'จัดการ Goal',
-        'icon': Icons.track_changes_rounded,
-      },
-      {
-        'title': 'จัดการ Exercise',
-        'icon': Icons.assignment_rounded,
-      },
+      {'title': 'จัดการ Skill', 'icon': Icons.folder_rounded},
+      {'title': 'จัดการ Goal', 'icon': Icons.track_changes_rounded},
+      {'title': 'จัดการ Exercise', 'icon': Icons.assignment_rounded},
+      {'title': 'จัดการ Session', 'icon': Icons.view_list_rounded},
     ];
 
     return Container(
@@ -34,12 +26,7 @@ class AdminSidebarWidget extends StatelessWidget {
       height: double.infinity,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          right: BorderSide(
-            color: Color(0xFFE2E8F0),
-            width: 1,
-          ),
-        ),
+        border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,10 +198,7 @@ class AdminSidebarWidget extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFFECACA),
-                    width: 1,
-                  ),
+                  border: Border.all(color: const Color(0xFFFECACA), width: 1),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,

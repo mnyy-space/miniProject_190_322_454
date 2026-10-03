@@ -10,8 +10,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// รองรับ admin/skill, admin/goal, admin/exercise ตามรูปแบบ { isError, data }
 class FakeBackend {
   final List<Map<String, dynamic>> skills = [
-    {'skill_id': 1, 'skill_code': 'ARRAYS', 'skill_name': 'Arrays', 'is_active': 1},
-    {'skill_id': 2, 'skill_code': 'STACK', 'skill_name': 'Stack & Queue', 'is_active': 0},
+    {
+      'skill_id': 1,
+      'skill_code': 'ARRAYS',
+      'skill_name': 'Arrays',
+      'is_active': 1,
+    },
+    {
+      'skill_id': 2,
+      'skill_code': 'STACK',
+      'skill_name': 'Stack & Queue',
+      'is_active': 0,
+    },
   ];
 
   final List<Map<String, dynamic>> goals = [
@@ -49,13 +59,35 @@ class FakeBackend {
         {'choice_id': 201, 'choice_script': 'LIFO', 'isAnswer': 1},
       ],
     },
+    {
+      'exercise_id': 12,
+      'exercise_script': 'เพิ่มค่าเข้า list',
+      'skill_id': 1,
+      'skill_name': 'Arrays',
+      'is_active': 1,
+      'choices': [
+        {'choice_id': 202, 'choice_script': 'append()', 'isAnswer': 1},
+      ],
+    },
+  ];
+
+  final List<Map<String, dynamic>> sessions = [
+    {
+      'session_id': 5,
+      'session_name': 'Array เบื้องต้น',
+      'skill_id': 1,
+      'skill_name': 'Arrays',
+      'exercise_ids': [10],
+      'exercise_names': ['ดึงค่าตัวสุดท้ายออกจาก list'],
+    },
   ];
 
   /// บันทึกทุก request ที่เข้ามา ในรูป "METHOD path" และ body คู่กัน
   final List<String> requests = [];
   final List<Map<String, dynamic>> bodies = [];
 
-  Map<String, dynamic> bodyOf(String request) => bodies[requests.indexOf(request)];
+  Map<String, dynamic> bodyOf(String request) =>
+      bodies[requests.indexOf(request)];
 
   late final MockClient client = MockClient(_handle);
 
@@ -75,6 +107,7 @@ class FakeBackend {
       'skill' => skills,
       'goal' => goals,
       'exercise' => exercises,
+      'session' => sessions,
       _ => null,
     };
     if (table == null) return _error(404);
@@ -93,7 +126,9 @@ class FakeBackend {
     final index = table.indexWhere((row) => row[idKey] == id);
     if (index < 0) return _error(404);
 
-    if (segments.length == 4 && segments[3] == 'status' && request.method == 'PATCH') {
+    if (segments.length == 4 &&
+        segments[3] == 'status' &&
+        request.method == 'PATCH') {
       table[index]['is_active'] = body['is_active'];
       return _ok(null);
     }
@@ -109,16 +144,16 @@ class FakeBackend {
   }
 
   http.Response _ok(dynamic data) => http.Response(
-        jsonEncode({'isError': false, 'data': data}),
-        200,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      );
+    jsonEncode({'isError': false, 'data': data}),
+    200,
+    headers: {'content-type': 'application/json; charset=utf-8'},
+  );
 
   http.Response _error(int status) => http.Response(
-        jsonEncode({'isError': true, 'errorMessage': 'HTTP $status'}),
-        status,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      );
+    jsonEncode({'isError': true, 'errorMessage': 'HTTP $status'}),
+    status,
+    headers: {'content-type': 'application/json; charset=utf-8'},
+  );
 }
 
 const Size desktopSize = Size(1400, 1000);
@@ -147,12 +182,14 @@ Future<void> pumpAdminScreen(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  await tester.pumpWidget(screen is MaterialApp ? screen : MaterialApp(home: screen));
+  await tester.pumpWidget(
+    screen is MaterialApp ? screen : MaterialApp(home: screen),
+  );
   await tester.pumpAndSettle();
 }
 
 /// หา widget ที่อยู่ภายใน dialog ที่เปิดอยู่ (ไม่รวม widget ของหน้าด้านหลัง)
 Finder inDialog(Finder matching) => find.descendant(
-      of: find.byWidgetPredicate((w) => w is Dialog || w is AlertDialog),
-      matching: matching,
-    );
+  of: find.byWidgetPredicate((w) => w is Dialog || w is AlertDialog),
+  matching: matching,
+);
