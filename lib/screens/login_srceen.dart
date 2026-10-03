@@ -7,6 +7,7 @@ import 'package:halalsefllearning/utils/date_util.dart';
 import "package:shared_preferences/shared_preferences.dart";
 import 'package:halalsefllearning/screens/admin/admin_layout.dart';
 import 'package:halalsefllearning/screens/user_main_layout.dart';
+import 'package:halalsefllearning/screens/welcome_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -59,6 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _doLogin(BuildContext context) async {
     var (isError, authenToken, errorMessage) = await _authenRequest();
+    if (!mounted) return;
 
     if (isError) {
       setState(() => _isLoading = false);
@@ -68,20 +70,29 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       var result = await _accessRequest(authenToken);
+      if (!mounted) return;
       setState(() => _isLoading = false);
 
       if (!result.isError) {
-        print("Login Success with role: ${result.roleName}");
         if (result.roleName.toLowerCase() == "admin") {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const AdminLayout()),
           );
         } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const UserMainLayout()),
-          );
+          // ถ้ายังไม่มีประวัติใน history ล่าสุดเลย -> ไปหน้า WelcomeScreen
+          if (!result.hasHistory) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+            );
+          } else {
+            // ถ้ามีประวัติใน history แล้ว -> ไปหน้า Home โดยอิงตาม session ล่าสุด
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const UserMainLayout()),
+            );
+          }
         }
       } else {
         showDialog(
@@ -92,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<({bool isError, String data, String roleName, String errorMessage})> _accessRequest(
+  Future<({bool isError, String data, String roleName, bool hasHistory, String errorMessage})> _accessRequest(
     String authenToken,
   ) async {
     String username = _usernameController.text;
@@ -114,17 +125,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final json = jsonDecode(response.body);
     String roleName = "";
+    bool hasHistory = false;
     if (!json["isError"]) {
       roleName = json["data"]?["role_name"] as String? ?? "";
+      hasHistory = json["data"]?["has_history"] == true;
+      final latestHistory = json["data"]?["latest_history"];
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString("access_token", json["data"]["accessToken"] ?? "");
       await prefs.setString("username", _usernameController.text);
       await prefs.setString("role_name", roleName);
+      await prefs.setBool("has_history", hasHistory);
+
+      if (hasHistory && latestHistory != null) {
+        await prefs.setInt("latest_skill_id", (latestHistory["skill_id"] as num?)?.toInt() ?? 0);
+        await prefs.setString("latest_skill_name", latestHistory["skill_name"] as String? ?? "");
+        await prefs.setInt("latest_session_id", (latestHistory["session_id"] as num?)?.toInt() ?? 0);
+        await prefs.setString("latest_session_name", latestHistory["session_name"] as String? ?? "");
+      } else {
+        await prefs.remove("latest_skill_id");
+        await prefs.remove("latest_skill_name");
+        await prefs.remove("latest_session_id");
+        await prefs.remove("latest_session_name");
+      }
     }
     return (
       isError: json["isError"] as bool,
       data: json["data"]?["accessToken"] as String? ?? "",
       roleName: roleName,
+      hasHistory: hasHistory,
       errorMessage: json["errorMessage"] as String? ?? "Login failed",
     );
   }

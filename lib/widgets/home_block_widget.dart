@@ -1,10 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:halalsefllearning/screens/sessions_screen_list.dart';
 
-class HomeBlockWidget extends StatelessWidget {
+class HomeBlockWidget extends StatefulWidget {
   const HomeBlockWidget({super.key});
 
   @override
+  State<HomeBlockWidget> createState() => _HomeBlockWidgetState();
+}
+
+class _HomeBlockWidgetState extends State<HomeBlockWidget> {
+  int? _latestSkillId;
+  String? _latestSkillName;
+  String? _latestSessionName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLatestHistory();
+  }
+
+  Future<void> _loadLatestHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final skillId = prefs.getInt("latest_skill_id");
+    final skillName = prefs.getString("latest_skill_name");
+    final sessionName = prefs.getString("latest_session_name");
+
+    if (mounted && skillName != null && skillName.isNotEmpty) {
+      setState(() {
+        _latestSkillId = skillId;
+        _latestSkillName = skillName;
+        _latestSessionName = sessionName;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bool hasLatestSession = _latestSkillName != null && _latestSkillName!.isNotEmpty;
+
     return Stack(
       children: [
         // พื้นหลังสีฟ้าโค้งด้านบน (Blue Curved Background)
@@ -39,7 +73,7 @@ class HomeBlockWidget extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.white.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -64,7 +98,7 @@ class HomeBlockWidget extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Card สีขาว "Especially For You" (Promo Card)
+                // Card สีขาว "Especially For You" หรือ "Continue Learning"
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -73,7 +107,7 @@ class HomeBlockWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF2894D7).withOpacity(0.12),
+                        color: const Color(0xFF2894D7).withValues(alpha: 0.12),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -81,45 +115,62 @@ class HomeBlockWidget extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      // ส่วนข้อความและปุ่ม Watch Now ด้านซ้าย
+                      // ส่วนข้อความและปุ่มทำต่อด้านซ้าย
                       Expanded(
                         flex: 6,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Especially For You',
-                              style: TextStyle(
+                            Text(
+                              hasLatestSession ? 'Continue Learning' : 'Especially For You',
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF1E293B),
                               ),
                             ),
                             const SizedBox(height: 6),
-                            const Text(
-                              'Two new sections and\nmany topics.',
-                              style: TextStyle(
+                            Text(
+                              hasLatestSession
+                                  ? '$_latestSkillName\n${_latestSessionName ?? "Session ล่าสุด"}'
+                                  : 'Two new sections and\nmany topics.',
+                              style: const TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFF64748B),
                                 height: 1.4,
                               ),
                             ),
                             const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE2F6FC),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'Watch Now',
-                                style: TextStyle(
-                                  color: Color(0xFF1E88E5),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                            InkWell(
+                              onTap: () {
+                                if (hasLatestSession && _latestSkillId != null && _latestSkillId! > 0) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SessionsScreenList(
+                                        skillId: _latestSkillId!,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE2F6FC),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  hasLatestSession ? 'ทำต่อเลย ➡' : 'Watch Now',
+                                  style: const TextStyle(
+                                    color: Color(0xFF1E88E5),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
