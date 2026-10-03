@@ -4,6 +4,7 @@ import 'package:halalsefllearning/screens/admin/admin_exercises_screen.dart';
 import 'package:halalsefllearning/screens/admin/admin_goals_screen.dart';
 import 'package:halalsefllearning/screens/admin/admin_skills_screen.dart';
 import 'package:halalsefllearning/screens/admin/admin_sessions_screen.dart';
+import 'package:halalsefllearning/screens/admin/admin_users_screen.dart';
 import 'package:halalsefllearning/widgets/admin/admin_sidebar_widget.dart';
 import 'package:halalsefllearning/widgets/admin/admin_topbar_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,6 +25,7 @@ class _AdminLayoutState extends State<AdminLayout> {
     'จัดการ Goal',
     'จัดการ Exercise',
     'จัดการ Session',
+    'จัดการข้อมูลผู้ใช้',
   ];
 
   final List<Widget> _screens = const [
@@ -31,6 +33,7 @@ class _AdminLayoutState extends State<AdminLayout> {
     AdminGoalsScreen(),
     AdminExercisesScreen(),
     AdminSessionsScreen(),
+    AdminUsersScreen(),
   ];
 
   void _onMenuItemSelected(int index) {
