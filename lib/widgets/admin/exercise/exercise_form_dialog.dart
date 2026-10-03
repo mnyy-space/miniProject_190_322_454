@@ -20,25 +20,13 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
   late final TextEditingController _descriptionController;
   late final TextEditingController _codeController;
   late final TextEditingController _levelController;
-  late final TextEditingController _expectedTimeController;
-  late final TextEditingController _correctAnswerController;
   final List<TextEditingController> _choiceControllers = [];
   List<int?> _choiceIds = [];
   int _correctChoiceIndex = 0;
 
-  String _selectedLanguage = 'Python';
   late int _selectedSkillId;
-  String _selectedTimeUnit = 'นาที (minute)';
-  String _selectedType = 'FILL_IN_BLANK';
   String _selectedStatus = 'active';
-  bool _caseSensitive = false;
 
-  static const List<String> _languages = ['Python', 'JavaScript', 'Java', 'C++', 'Dart'];
-  static const List<String> _timeUnits = ['วินาที (second)', 'นาที (minute)', 'ชั่วโมง (hour)'];
-  static const Map<String, String> _typeLabels = {
-    'CHOICE': 'CHOICE (ตัวเลือก)',
-    'FILL_IN_BLANK': 'FILL_IN_BLANK (เติมคำ)',
-  };
   static const List<String> _statuses = ['active', 'inactive'];
 
   @override
@@ -48,33 +36,23 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
     _descriptionController = TextEditingController(text: e?.description ?? '');
     _codeController = TextEditingController(text: e?.codeSnippet ?? '');
     _levelController = TextEditingController(text: (e?.level ?? 1).toString());
-    _expectedTimeController = TextEditingController(text: (e?.expectedTime ?? 3).toString());
-    _correctAnswerController = TextEditingController(text: e?.correctAnswer ?? '');
 
-    _selectedLanguage = e?.language ?? 'Python';
     final skillIds = widget.skillOptions.map((s) => s.id);
     _selectedSkillId = (e != null && skillIds.contains(e.skillId))
         ? e.skillId
         : widget.skillOptions.first.id;
 
-    // ตัวเลือกของ CHOICE (ถ้าเป็นโจทย์ใหม่เริ่มต้นที่ 4 ช่อง)
-    final isChoice = e != null && e.type == 'CHOICE';
+    // ตัวเลือกของ CHOICE (เริ่มต้นอย่างน้อย 4 ช่อง)
     final initialChoices =
-        (isChoice && e.choices.isNotEmpty) ? e.choices : List.filled(4, '');
-    _choiceIds = isChoice
+        (e != null && e.choices.isNotEmpty) ? e.choices : List.filled(4, '');
+    _choiceIds = (e != null && e.choiceIds.isNotEmpty)
         ? List<int?>.from(e.choiceIds)
         : List<int?>.filled(initialChoices.length, null);
     for (final text in initialChoices) {
       _choiceControllers.add(TextEditingController(text: text));
     }
-    _correctChoiceIndex = isChoice ? e.correctChoiceIndex : 0;
-    _selectedTimeUnit = e?.timeUnit ?? 'นาที (minute)';
-    _selectedType = e?.type ?? 'FILL_IN_BLANK';
+    _correctChoiceIndex = e?.correctChoiceIndex ?? 0;
     _selectedStatus = (e?.isActive ?? true) ? 'active' : 'inactive';
-    _caseSensitive = e?.caseSensitive ?? false;
-
-    // อัปเดตพรีวิวโค้ดทุกครั้งที่พิมพ์
-    _codeController.addListener(() => setState(() {}));
   }
 
   @override
@@ -82,8 +60,6 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
     _descriptionController.dispose();
     _codeController.dispose();
     _levelController.dispose();
-    _expectedTimeController.dispose();
-    _correctAnswerController.dispose();
     for (final c in _choiceControllers) {
       c.dispose();
     }
@@ -104,11 +80,7 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
   /// ตรวจความถูกต้องของฟอร์ม คืนข้อความ error หรือ null ถ้าผ่าน
   String? _validate(List<String> choiceTexts) {
     if (_descriptionController.text.trim().isEmpty) return 'กรุณากรอกคำอธิบายโจทย์';
-    if (_selectedType == 'FILL_IN_BLANK' && _correctAnswerController.text.trim().isEmpty) {
-      return 'กรุณากรอกคำตอบที่ถูกต้อง';
-    }
-    if (_selectedType == 'CHOICE' &&
-        (choiceTexts.length < 2 || choiceTexts.any((t) => t.isEmpty))) {
+    if (choiceTexts.length < 2 || choiceTexts.any((t) => t.isEmpty)) {
       return 'กรุณากรอกตัวเลือกให้ครบอย่างน้อย 2 ข้อ';
     }
     return null;
@@ -127,20 +99,18 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
       id: existing?.id ?? DateTime.now().millisecondsSinceEpoch,
       description: _descriptionController.text.trim(),
       codeSnippet: _codeController.text,
-      language: _selectedLanguage,
+      language: 'Python',
       level: int.tryParse(_levelController.text.trim()) ?? 1,
       skillId: _selectedSkillId,
       skill: widget.skillOptions.firstWhere((s) => s.id == _selectedSkillId).name,
-      expectedTime: int.tryParse(_expectedTimeController.text.trim()) ?? 3,
-      timeUnit: _selectedTimeUnit,
-      type: _selectedType,
-      correctAnswer: _correctAnswerController.text.trim(),
-      caseSensitive: _caseSensitive,
+      expectedTime: 3,
+      timeUnit: 'นาที (minute)',
+      type: 'CHOICE',
+      correctAnswer: '',
+      caseSensitive: false,
       choices: choiceTexts,
       // ใช้ choice_id เดิมเพื่อให้ backend อัปเดตแทนการเพิ่มใหม่
-      choiceIds: _selectedType == 'CHOICE'
-          ? _choiceIds
-          : (existing != null && existing.type == 'FILL_IN_BLANK' ? existing.choiceIds : []),
+      choiceIds: _choiceIds,
       correctChoiceIndex: _correctChoiceIndex,
       isActive: _selectedStatus == 'active',
     );
@@ -189,19 +159,15 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
         const SizedBox(height: 20),
         const AdminFieldLabel('ตัวอย่างที่ผู้เรียนจะเห็น'),
         const SizedBox(height: 8),
-        CodePreviewCard(
-          code: _codeController.text,
-          language: _selectedLanguage,
-          onCopy: _copyCodeToClipboard,
-        ),
-        const SizedBox(height: 20),
-        AdminLabeledField(
-          label: 'ภาษาของโค้ด',
-          child: AdminDropdownField<String>(
-            value: _selectedLanguage,
-            items: _languages,
-            onChanged: (val) => setState(() => _selectedLanguage = val),
-          ),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _codeController,
+          builder: (context, value, child) {
+            return CodePreviewCard(
+              code: value.text,
+              language: 'Python',
+              onCopy: _copyCodeToClipboard,
+            );
+          },
         ),
         const SizedBox(height: 20),
         AdminFieldRow(
@@ -224,57 +190,20 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
           ),
         ),
         const SizedBox(height: 20),
-        AdminFieldRow(
-          left: AdminLabeledField(
-            label: 'เวลาที่คาดหวัง (EXPECTED TIME)',
-            child: TextField(
-              controller: _expectedTimeController,
-              keyboardType: TextInputType.number,
-              decoration: adminInputDecoration(),
-            ),
-          ),
-          right: AdminLabeledField(
-            label: 'หน่วย (UNIT)',
-            child: AdminDropdownField<String>(
-              value: _selectedTimeUnit,
-              items: _timeUnits,
-              onChanged: (val) => setState(() => _selectedTimeUnit = val),
-            ),
+        AdminLabeledField(
+          label: 'สถานะ',
+          child: AdminDropdownField<String>(
+            value: _selectedStatus,
+            items: _statuses,
+            onChanged: (val) => setState(() => _selectedStatus = val),
           ),
         ),
         const SizedBox(height: 20),
-        AdminFieldRow(
-          left: AdminLabeledField(
-            label: 'ประเภทโจทย์ (TYPE)',
-            child: AdminDropdownField<String>(
-              value: _selectedType,
-              items: _typeLabels.keys.toList(),
-              displayLabel: (v) => _typeLabels[v] ?? v,
-              onChanged: (val) => setState(() => _selectedType = val),
-            ),
-          ),
-          right: AdminLabeledField(
-            label: 'สถานะ',
-            child: AdminDropdownField<String>(
-              value: _selectedStatus,
-              items: _statuses,
-              onChanged: (val) => setState(() => _selectedStatus = val),
-            ),
-          ),
+        ChoiceOptionsField(
+          controllers: _choiceControllers,
+          correctIndex: _correctChoiceIndex,
+          onCorrectIndexChanged: (val) => setState(() => _correctChoiceIndex = val),
         ),
-        const SizedBox(height: 20),
-        if (_selectedType == 'FILL_IN_BLANK')
-          FillInBlankAnswerField(
-            controller: _correctAnswerController,
-            caseSensitive: _caseSensitive,
-            onCaseSensitiveChanged: (val) => setState(() => _caseSensitive = val),
-          )
-        else
-          ChoiceOptionsField(
-            controllers: _choiceControllers,
-            correctIndex: _correctChoiceIndex,
-            onCorrectIndexChanged: (val) => setState(() => _correctChoiceIndex = val),
-          ),
       ],
     );
   }
