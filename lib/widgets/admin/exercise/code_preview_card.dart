@@ -15,7 +15,7 @@ class CodePreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayCode = code.isEmpty ? '# ยังไม่มีโค้ดประกอบโจทย์' : code;
+    final displayCode = code.trim().isEmpty ? '# ยังไม่มีโค้ดประกอบโจทย์' : code;
 
     return Container(
       width: double.infinity,

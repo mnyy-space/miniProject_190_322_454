@@ -15,7 +15,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
 
   // รายการหน้าจอทั้ง 3 หน้า
   final List<Widget> _pages = const [
-    HomeScreen(),
+    HomeScreen(), // สลับหน้าระหว่างคนไม่เคยเล่น และ คนเคยเล่นอัตโนมัติ
     UserHistoryScreen(),
     UserProfileScreen(),
   ];

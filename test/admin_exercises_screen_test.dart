@@ -50,9 +50,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('แก้ไข Exercise'), findsOneWidget);
 
-      // โค้ดประกอบโจทย์ + ปุ่มแทรกช่องว่าง -> พรีวิวต้องอัปเดต
-      await tester.enterText(inDialog(find.byType(TextField)).at(1), 'stack.');
-      await tester.tap(find.text('แทรกช่องว่าง'));
+      // โค้ดประกอบโจทย์ -> พรีวิวต้องอัปเดต
+      await tester.enterText(inDialog(find.byType(TextField)).at(1), 'stack.____');
       await tester.pumpAndSettle();
       expect(find.textContaining('stack.____', findRichText: true), findsWidgets);
 
@@ -70,7 +69,7 @@ void main() {
       expect(backend.requests, isNot(contains('PATCH admin/exercise/11/status')));
     });
 
-    adminTestWidgets('เพิ่ม FILL_IN_BLANK ใหม่แบบ inactive ส่ง POST แล้ว PATCH สถานะ', (tester, backend) async {
+    adminTestWidgets('เพิ่ม CHOICE ใหม่แบบ inactive ส่ง POST แล้ว PATCH สถานะ', (tester, backend) async {
       await pumpAdminScreen(tester, const AdminExercisesScreen());
 
       await tester.tap(find.text('เพิ่ม Exercise ใหม่'));
@@ -82,7 +81,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('inactive').last);
       await tester.pumpAndSettle();
-      await tester.enterText(inDialog(find.byType(TextField)).last, 'pop(0)');
+      // กรอกตัวเลือก CHOICE (index 0: desc, 1: code, 2: level, 3..6: choices)
+      await tester.enterText(fields.at(3), 'pop(0)');
+      await tester.enterText(fields.at(4), 'pop()');
+      await tester.enterText(fields.at(5), 'remove()');
+      await tester.enterText(fields.at(6), 'del');
       await tester.tap(find.text('บันทึก'));
       await tester.pumpAndSettle();
 
@@ -91,6 +94,9 @@ void main() {
         'skill_id': 1,
         'choices': [
           {'choice_script': 'pop(0)', 'isAnswer': true},
+          {'choice_script': 'pop()', 'isAnswer': false},
+          {'choice_script': 'remove()', 'isAnswer': false},
+          {'choice_script': 'del', 'isAnswer': false},
         ],
       });
       expect(backend.bodyOf('PATCH admin/exercise/1002/status'), {'is_active': 0});

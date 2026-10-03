@@ -1,51 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/widgets/admin/common/admin_form_widgets.dart';
 
-/// ช่องกรอก "โค้ดประกอบโจทย์" + ปุ่มแทรกช่องว่าง ____ ตรงตำแหน่งเคอร์เซอร์
+/// ช่องกรอก "โค้ดประกอบโจทย์ (ไม่บังคับ)"
 class ExerciseCodeEditor extends StatelessWidget {
   final TextEditingController controller;
 
   const ExerciseCodeEditor({super.key, required this.controller});
-
-  void _insertBlank() {
-    final text = controller.text;
-    final selection = controller.selection;
-    final insertPos =
-        selection.start >= 0 && selection.start <= text.length ? selection.start : text.length;
-    controller.value = TextEditingValue(
-      text: text.replaceRange(insertPos, insertPos, '____'),
-      selection: TextSelection.collapsed(offset: insertPos + 4),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Expanded(child: AdminFieldLabel('โค้ดประกอบโจทย์ (ไม่บังคับ)')),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: _insertBlank,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              icon: const Icon(Icons.add_rounded, size: 16),
-              label: const Text(
-                'แทรกช่องว่าง',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
+        const AdminFieldLabel('โค้ดประกอบโจทย์ (ไม่บังคับ)'),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
@@ -64,7 +31,7 @@ class ExerciseCodeEditor extends StatelessWidget {
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.all(14),
-              hintText: 'data = [1, 2, 3, 4]\nval = data.pop()\nprint(val)',
+              hintText: 'พิมพ์โค้ดประกอบโจทย์ที่นี่... (ไม่บังคับ)',
               hintStyle: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 13,
@@ -72,12 +39,6 @@ class ExerciseCodeEditor extends StatelessWidget {
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'พิมพ์ ____ (ขีดล่างอย่างน้อย 3 ตัว) ตรงจุดที่ต้องการให้ผู้เรียนเติมคำตอบ '
-          'หรือกดปุ่ม "แทรกช่องว่าง" ด้านบนแทนการพิมพ์เอง',
-          style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
         ),
       ],
     );
