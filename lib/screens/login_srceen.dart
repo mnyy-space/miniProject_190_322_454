@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:halalsefllearning/config/app_config.dart';
 import 'package:halalsefllearning/utils/date_util.dart';
 import "package:shared_preferences/shared_preferences.dart";
-import 'package:halalsefllearning/screens/admin/admin_layout.dart';
-import 'package:halalsefllearning/screens/user_main_layout.dart';
+import 'package:halalsefllearning/screens/register_screen.dart';
+import 'package:halalsefllearning/utils/auth_session.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -72,17 +72,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!result.isError) {
         print("Login Success with role: ${result.roleName}");
-        if (result.roleName.toLowerCase() == "admin") {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminLayout()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const UserMainLayout()),
-          );
-        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AuthSession.homeForRole(result.roleName),
+          ),
+        );
       } else {
         showDialog(
           context: context,
@@ -127,6 +122,18 @@ class _LoginScreenState extends State<LoginScreen> {
       roleName: roleName,
       errorMessage: json["errorMessage"] as String? ?? "Login failed",
     );
+  }
+
+  void _openRegister() async {
+    final username = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const RegisterScreen()),
+    );
+    // สมัครสำเร็จจะได้ username กลับมา เติมให้ในช่อง login
+    if (username != null && username.isNotEmpty) {
+      _usernameController.text = username;
+      _passwordController.clear();
+    }
   }
 
   @override
@@ -199,6 +206,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: _isLoading
                               ? const CircularProgressIndicator()
                               : const Text('Login'),
+                        ),
+                        TextButton(
+                          onPressed: _isLoading ? null : _openRegister,
+                          child: const Text('ยังไม่มีบัญชี? สมัครสมาชิก'),
                         ),
                       ],
                     ),
