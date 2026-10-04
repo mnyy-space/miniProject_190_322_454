@@ -11,7 +11,10 @@ class SkillDetailDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(skill.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        skill.name,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -19,8 +22,6 @@ class SkillDetailDialog extends StatelessWidget {
           Text('Skill Code: ${skill.code}'),
           const SizedBox(height: 6),
           Text('Tier: ${skill.tier}'),
-          const SizedBox(height: 6),
-          Text('Prerequisite: ${skill.prerequisite}'),
           const SizedBox(height: 6),
           Text('สถานะ: ${skill.isActive ? "Active" : "Inactive"}'),
         ],

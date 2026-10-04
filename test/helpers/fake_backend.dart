@@ -82,6 +82,29 @@ class FakeBackend {
     },
   ];
 
+  final List<Map<String, dynamic>> users = [
+    {
+      'user_id': 1,
+      'username': 'admin',
+      'full_name': 'System Administrator',
+      'email': 'admin@example.com',
+      'role_id': 2,
+      'role_name': 'admin',
+      'learning_content': 'Arrays (Array เบื้องต้น)',
+      'create_date': '2026-10-03 16:41:14',
+    },
+    {
+      'user_id': 4,
+      'username': 'afdol',
+      'full_name': 'Afdol User',
+      'email': 'afdol@example.com',
+      'role_id': 1,
+      'role_name': 'user',
+      'learning_content': 'Functions (Introduction)',
+      'create_date': '2026-10-03 16:41:14',
+    },
+  ];
+
   /// บันทึกทุก request ที่เข้ามา ในรูป "METHOD path" และ body คู่กัน
   final List<String> requests = [];
   final List<Map<String, dynamic>> bodies = [];
@@ -108,6 +131,7 @@ class FakeBackend {
       'goal' => goals,
       'exercise' => exercises,
       'session' => sessions,
+      'user' => users,
       _ => null,
     };
     if (table == null) return _error(404);
