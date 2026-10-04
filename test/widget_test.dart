@@ -8,7 +8,7 @@ import 'helpers/fake_backend.dart';
 
 void main() {
   adminTestWidgets('แอปเปิดขึ้นมาที่ AdminLayout และสลับเมนูได้', (tester, backend) async {
-    await pumpAdminScreen(tester, const MyApp());
+    await pumpAdminScreen(tester, const AdminLayout());
 
     expect(find.byType(AdminLayout), findsOneWidget);
     expect(find.byType(AdminSkillsScreen), findsOneWidget);

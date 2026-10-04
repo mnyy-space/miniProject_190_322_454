@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:halalsefllearning/screens/admin/admin_layout.dart';
 import 'package:halalsefllearning/screens/login_srceen.dart';
+import 'package:halalsefllearning/utils/auth_session.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,7 +21,30 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      navigatorKey: AuthSession.navigatorKey,
+      home: const AuthGate(),
+    );
+  }
+}
+
+// เปิดแอป: ถ้ายัง login อยู่ไปหน้าแรกตาม role ไม่งั้นไปหน้า login
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  Future<Widget> _start() async {
+    if (await AuthSession.isLoggedIn()) {
+      return AuthSession.homeForRole(await AuthSession.getRole());
+    }
+    return const LoginScreen();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Widget>(
+      future: _start(),
+      builder: (context, snapshot) =>
+          snapshot.data ??
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
     );
   }
 }
