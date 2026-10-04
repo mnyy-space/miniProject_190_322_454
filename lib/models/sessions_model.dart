@@ -31,11 +31,16 @@ class SessionsResponse{
   });
 
   factory SessionsResponse.fromJson(Map<String, dynamic> json){
+    List<SessionsModel> sessionList = [];
+    if (json['data'] != null && json['data'] is List) {
+      sessionList = (json['data'] as List)
+          .map((item)=> SessionsModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    }
+
     return SessionsResponse(
       isError: json['isError'] as bool? ?? false,
-      data : (json['data'] as List? ?? [])
-            .map((item)=> SessionsModel.fromJson(item as Map<String, dynamic>))
-            .toList(),
+      data: sessionList,
       errorMessage: json['errorMessage'] as String? ?? '',
     );
   }

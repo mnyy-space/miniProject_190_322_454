@@ -15,7 +15,7 @@ class _SessionsScreenList extends State<SessionsScreenList>{
   List<SessionsModel> sessionStore = [];
 
   void _fetchData() async{ 
-      var response = await AppApi.getWithParams('/session/', widget.skillId as String);
+      var response = await AppApi.getWithParams('/session/', widget.skillId.toString());
       Map<String, dynamic> json = jsonDecode(response.body);
       SessionsResponse store = SessionsResponse.fromJson(json);
 

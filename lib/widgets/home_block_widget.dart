@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:halalsefllearning/screens/sessions_screen_list.dart';
+import 'package:halalsefllearning/api/app_api.dart';
+import 'package:halalsefllearning/models/history_model.dart';
+import 'package:halalsefllearning/screens/exercise_screen.dart';
 
 class HomeBlockWidget extends StatefulWidget {
   const HomeBlockWidget({super.key});
@@ -10,8 +13,8 @@ class HomeBlockWidget extends StatefulWidget {
 }
 
 class _HomeBlockWidgetState extends State<HomeBlockWidget> {
-  int? _latestSkillId;
   String? _latestSkillName;
+  int? _latestSessionId;
   String? _latestSessionName;
 
   @override
@@ -21,17 +24,61 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
   }
 
   Future<void> _loadLatestHistory() async {
+    // 1. อ่านข้อมูลแคชเดิมจาก SharedPreferences มาแสดงผลก่อนทันที
     final prefs = await SharedPreferences.getInstance();
-    final skillId = prefs.getInt("latest_skill_id");
-    final skillName = prefs.getString("latest_skill_name");
-    final sessionName = prefs.getString("latest_session_name");
+    final cachedSkillName = prefs.getString("latest_skill_name");
+    final cachedSessionId = prefs.getInt("latest_session_id");
+    final cachedSessionName = prefs.getString("latest_session_name");
 
-    if (mounted && skillName != null && skillName.isNotEmpty) {
+    if (mounted && cachedSkillName != null && cachedSkillName.isNotEmpty) {
       setState(() {
-        _latestSkillId = skillId;
-        _latestSkillName = skillName;
-        _latestSessionName = sessionName;
+        _latestSkillName = cachedSkillName;
+        _latestSessionId = cachedSessionId;
+        _latestSessionName = cachedSessionName;
       });
+    }
+
+    // 2. ยิง API ไปดึงข้อมูลประวัติล่าสุดจริงจากฐานข้อมูล (Database)
+    try {
+      final response = await AppApi.get("user/latest-history");
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final latestHistoryRes = LatestHistoryResponse.fromJson(json);
+
+        if (!latestHistoryRes.isError && latestHistoryRes.data != null) {
+          final history = latestHistoryRes.data!;
+          if (mounted) {
+            setState(() {
+              _latestSkillName = history.skillName;
+              _latestSessionId = history.sessionId;
+              _latestSessionName = history.sessionName;
+            });
+          }
+
+          // ซิงค์ข้อมูลล่าสุดลง SharedPreferences ให้ตรงกับฐานข้อมูล
+          await prefs.setBool("has_history", true);
+          await prefs.setInt("latest_skill_id", history.skillId);
+          await prefs.setString("latest_skill_name", history.skillName);
+          await prefs.setInt("latest_session_id", history.sessionId);
+          await prefs.setString("latest_session_name", history.sessionName);
+        } else if (!latestHistoryRes.isError && latestHistoryRes.data == null) {
+          // ถ้าในฐานข้อมูลไม่มีประวัติเลย
+          if (mounted) {
+            setState(() {
+              _latestSkillName = null;
+              _latestSessionId = null;
+              _latestSessionName = null;
+            });
+          }
+          await prefs.setBool("has_history", false);
+          await prefs.remove("latest_skill_id");
+          await prefs.remove("latest_skill_name");
+          await prefs.remove("latest_session_id");
+          await prefs.remove("latest_session_name");
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching latest history from DB: $e");
     }
   }
 
@@ -143,12 +190,13 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
                             const SizedBox(height: 16),
                             InkWell(
                               onTap: () {
-                                if (hasLatestSession && _latestSkillId != null && _latestSkillId! > 0) {
+                                if (hasLatestSession && _latestSessionId != null && _latestSessionId! > 0) {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => SessionsScreenList(
-                                        skillId: _latestSkillId!,
+                                      builder: (context) => ExerciseScreen(
+                                        skillTitle: _latestSessionName ?? "แบบฝึกหัด",
+                                        sessionId: _latestSessionId,
                                       ),
                                     ),
                                   );

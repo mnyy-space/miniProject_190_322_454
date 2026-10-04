@@ -1,10 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:halalsefllearning/api/app_api.dart';
+import 'package:halalsefllearning/models/history_model.dart';
+import 'package:halalsefllearning/screens/exercise_screen.dart';
 import 'package:halalsefllearning/screens/login_srceen.dart';
 import 'package:halalsefllearning/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserMainLayout extends StatefulWidget {
-  const UserMainLayout({super.key});
+  final int? skillId;
+  const UserMainLayout({super.key, this.skillId});
 
   @override
   State<UserMainLayout> createState() => _UserMainLayoutState();
@@ -12,13 +18,17 @@ class UserMainLayout extends StatefulWidget {
 
 class _UserMainLayoutState extends State<UserMainLayout> {
   int _currentIndex = 0;
+  late final List<Widget> _pages;
 
-  // รายการหน้าจอทั้ง 3 หน้า
-  final List<Widget> _pages = const [
-    HomeScreen(), // สลับหน้าระหว่างคนไม่เคยเล่น และ คนเคยเล่นอัตโนมัติ
-    UserHistoryScreen(),
-    UserProfileScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      HomeScreen(skillId: widget.skillId),
+      const UserHistoryScreen(),
+      const UserProfileScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,38 +125,79 @@ class _UserMainLayoutState extends State<UserMainLayout> {
 }
 
 // ======================================================================
-// หน้าจอที่ 2: ประวัติ (History Screen)
+// หน้าจอที่ 2: ประวัติ (History Screen) ดึงข้อมูลจริงจาก Database
 // ======================================================================
-class UserHistoryScreen extends StatelessWidget {
+class UserHistoryScreen extends StatefulWidget {
   const UserHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // ข้อมูลจำลองประวัติการทำแบบฝึกหัด
-    final List<Map<String, dynamic>> historyItems = [
-      {
-        'title': 'แบบทดสอบ: Arrays & Linked Lists',
-        'score': '8/10 คะแนน',
-        'date': '26 ก.ย. 2026 • 15:30',
-        'icon': Icons.menu_book_rounded,
-        'color': const Color(0xFFFF3B56),
-      },
-      {
-        'title': 'แบบทดสอบ: Classes & Objects',
-        'score': '9/10 คะแนน',
-        'date': '25 ก.ย. 2026 • 11:20',
-        'icon': Icons.quiz_rounded,
-        'color': const Color(0xFF00C9A7),
-      },
-      {
-        'title': 'แบบทดสอบ: Control Flow',
-        'score': '10/10 คะแนน',
-        'date': '24 ก.ย. 2026 • 09:45',
-        'icon': Icons.assignment_rounded,
-        'color': const Color(0xFF3B82F6),
-      },
-    ];
+  State<UserHistoryScreen> createState() => _UserHistoryScreenState();
+}
 
+class _UserHistoryScreenState extends State<UserHistoryScreen> {
+  List<HistoryModel> _historyList = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHistory();
+  }
+
+  Future<void> _fetchHistory() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await AppApi.get("user/history");
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final historyRes = HistoryListResponse.fromJson(json);
+
+        if (mounted) {
+          setState(() {
+            _historyList = historyRes.data;
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = "ไม่สามารถโหลดประวัติได้ (Code: ${response.statusCode})";
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = "เกิดข้อผิดพลาดในการโหลดประวัติ: $e";
+        });
+      }
+    }
+  }
+
+  void _openExercise(HistoryModel item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExerciseScreen(
+          skillTitle: item.sessionName,
+          sessionId: item.sessionId,
+        ),
+      ),
+    ).then((_) {
+      // เมื่อกลับมาจากแบบฝึกหัด ให้รีเฟรชประวัติ
+      _fetchHistory();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -166,81 +217,225 @@ class UserHistoryScreen extends StatelessWidget {
           child: Container(color: const Color(0xFFE2E8F0), height: 1),
         ),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(20),
-        itemCount: historyItems.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final item = historyItems[index];
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF2894D7)),
+            SizedBox(height: 16),
+            Text(
+              'กำลังโหลดประวัติการเรียนรู้...',
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: (item['color'] as Color).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    item['icon'] as IconData,
-                    color: item['color'] as Color,
-                    size: 24,
-                  ),
+          ],
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _fetchHistory,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('ลองใหม่'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2894D7),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['title'] as String,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item['date'] as String,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    item['score'] as String,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF059669),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_historyList.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _fetchHistory,
+        color: const Color(0xFF2894D7),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2F6FC),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Icon(
+                      Icons.history_rounded,
+                      size: 36,
+                      color: Color(0xFF2894D7),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'ยังไม่มีประวัติการเรียนรู้',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'เริ่มเรียนและทำแบบฝึกหัดแรกของคุณได้เลย!',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchHistory,
+      color: const Color(0xFF2894D7),
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        itemCount: _historyList.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final item = _historyList[index];
+          final dateStr = item.historyDate != null
+              ? DateFormat('dd/MM/yyyy • HH:mm').format(item.historyDate!.toLocal())
+              : '-';
+
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openExercise(item),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ],
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2894D7).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF2894D7),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.sessionName,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  item.skillName,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF475569),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  dateStr,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'เสร็จสิ้น',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
         },
@@ -297,7 +492,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               Navigator.pop(context);
               final prefs = await SharedPreferences.getInstance();
               await prefs.clear();
-              if (mounted) {
+              if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
