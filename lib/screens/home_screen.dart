@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/api/app_api.dart';
 import 'package:halalsefllearning/models/sessions_model.dart';
+import 'package:halalsefllearning/models/skills_model.dart';
 import 'package:halalsefllearning/screens/exercise_screen.dart';
 import 'package:halalsefllearning/screens/select_skill_screen.dart';
 import 'package:halalsefllearning/widgets/home_block_widget.dart';
@@ -58,12 +59,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (skillId != null && skillId > 0) {
       _fetchSessions(skillId);
+      _refreshSkillIcon(skillId);
     } else {
       if (mounted) {
         setState(() {
           isLoading = false;
         });
       }
+    }
+  }
+
+  /// ดึงไอคอนล่าสุดของ Skill จาก API (admin อาจเปลี่ยนไอคอนหลังจากที่แคชไว้ใน SharedPreferences)
+  Future<void> _refreshSkillIcon(int skillId) async {
+    try {
+      final response = await AppApi.get("skill");
+      if (response.statusCode != 200) return;
+      final skills = SkillsResponse.fromJson(jsonDecode(response.body)).data;
+      final matches = skills.where((s) => s.skillId == skillId);
+      if (matches.isEmpty) return;
+      final skill = matches.first;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("selected_skill_icon", skill.skillIcon);
+      if (mounted && _currentSkillId == skillId) {
+        setState(() => _currentSkillIcon = skill.skillIcon);
+      }
+    } catch (_) {
+      // โหลดไม่สำเร็จก็ใช้ไอคอนจากแคชเดิมต่อไป
     }
   }
 
@@ -312,27 +334,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSessionCard(SessionsModel session, int index) {
-    // ธีมสีสลับกันสำหรับ Session แต่ละใบ
-    final List<Map<String, dynamic>> cardTheme = [
-      {
-        'color': const Color(0xFF0096E6),
-        'icon': Icons.menu_book_rounded,
-      },
-      {
-        'color': const Color(0xFF00C9A7),
-        'icon': Icons.code_rounded,
-      },
-      {
-        'color': const Color(0xFF8B5CF6),
-        'icon': Icons.quiz_rounded,
-      },
-      {
-        'color': const Color(0xFFF59E0B),
-        'icon': Icons.terminal_rounded,
-      },
+    // สีสลับกันสำหรับ Session แต่ละใบ ส่วนไอคอนใช้ไอคอนของ Skill ที่ admin เลือก
+    const List<Color> cardColors = [
+      Color(0xFF0096E6),
+      Color(0xFF00C9A7),
+      Color(0xFF8B5CF6),
+      Color(0xFFF59E0B),
     ];
 
-    final theme = cardTheme[index % cardTheme.length];
+    final cardColor = cardColors[index % cardColors.length];
 
     return Container(
       decoration: BoxDecoration(
@@ -361,18 +371,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 66,
                   height: 66,
                   decoration: BoxDecoration(
-                    color: theme['color'] as Color,
+                    color: cardColor,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: (theme['color'] as Color).withValues(alpha: 0.3),
+                        color: cardColor.withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Icon(
-                    theme['icon'] as IconData,
+                    skillIconOf(_currentSkillIcon),
                     color: Colors.white,
                     size: 32,
                   ),
