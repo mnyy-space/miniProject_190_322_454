@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:halalsefllearning/api/app_api.dart';
 import 'package:halalsefllearning/models/exercise_model.dart';
 import 'package:halalsefllearning/utils/exercise_progress_store.dart';
+import 'package:halalsefllearning/utils/skill_icons.dart';
 import 'package:halalsefllearning/widgets/exercise/exercise_runner_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -52,7 +53,16 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
 
   void _saveProgress(Map<int, bool> answers) {
     final sessionId = _progressSessionId;
-    if (sessionId != null) ExerciseProgressStore.save(sessionId, answers);
+    if (sessionId == null) return;
+    final first = _questions.isNotEmpty ? _questions.first : null;
+    ExerciseProgressStore.save(
+      sessionId,
+      answers,
+      sessionName: widget.skillTitle,
+      skillName: first?.skillName ?? '',
+      skillIcon: first?.skillIcon ?? defaultSkillIconName,
+      totalQuestions: _questions.length,
+    );
   }
 
   @override
