@@ -22,6 +22,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<SessionsModel> sessionStore = [];
   // session_id -> จำนวนข้อที่ทำค้างไว้ (เฉพาะ Session ที่ออกกลางคัน)
   Map<int, int> _inProgress = {};
+  // session_id ที่เคยทำเสร็จแล้ว (มีประวัติใน DB)
+  Set<int> _completedSessions = {};
   int? _currentSkillId;
   String? _currentSkillName;
   String? _currentSkillIcon;
@@ -44,12 +46,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _initSkillAndFetchSessions() async {
     final prefs = await SharedPreferences.getInstance();
-    final skillId = widget.skillId ??
+    final skillId =
+        widget.skillId ??
         prefs.getInt("selected_skill_id") ??
         prefs.getInt("latest_skill_id");
-    final skillName = prefs.getString("selected_skill_name") ??
+    final skillName =
+        prefs.getString("selected_skill_name") ??
         prefs.getString("latest_skill_name");
-    final skillIcon = prefs.getString("selected_skill_icon") ??
+    final skillIcon =
+        prefs.getString("selected_skill_icon") ??
         prefs.getString("latest_skill_icon");
 
     if (mounted) {
@@ -140,13 +145,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onChangeSkill() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const SelectSkillScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const SelectSkillScreen()),
     );
   }
 
-  /// อ่านจำนวนข้อที่ทำค้างไว้ของแต่ละ Session จากในเครื่อง
+  /// โหลดสถานะของแต่ละ Session:
+  /// - ทำค้าง: จำนวนข้อที่ตอบไว้ในเครื่อง (ออกกลางคัน)
+  /// - ทำแล้ว: Session ที่มีประวัติทำเสร็จใน DB (GET user/history)
   Future<void> _loadInProgress() async {
     final Map<int, int> result = {};
     for (final session in sessionStore) {
@@ -154,6 +159,61 @@ class _HomeScreenState extends State<HomeScreen> {
       if (answers.isNotEmpty) result[session.sessionId] = answers.length;
     }
     if (mounted) setState(() => _inProgress = result);
+
+    try {
+      final List list = AppApi.unwrap(await AppApi.get("user/history")) ?? [];
+      final completed = list
+          .map((item) => (item['session_id'] as num?)?.toInt())
+          .whereType<int>()
+          .toSet();
+      if (mounted) setState(() => _completedSessions = completed);
+    } catch (_) {
+      // โหลดประวัติไม่ได้ก็แสดงแค่สถานะทำค้าง / ยังไม่ทำ
+    }
+  }
+
+  /// ป้ายสถานะมุมขวาบนของการ์ด Session
+  Widget _buildStatusTag(int sessionId) {
+    final String label;
+    final Color color;
+    final IconData icon;
+    if (_inProgress.containsKey(sessionId)) {
+      label = 'ทำค้าง';
+      color = const Color(0xFFEA580C);
+      icon = Icons.pause_circle_rounded;
+    } else if (_completedSessions.contains(sessionId)) {
+      label = 'ทำแล้ว';
+      color = const Color(0xFF059669);
+      icon = Icons.check_circle_rounded;
+    } else {
+      label = 'ยังไม่ทำ';
+      color = const Color(0xFF94A3B8);
+      icon = Icons.radio_button_unchecked_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _onTapSession(SessionsModel session) async {
@@ -202,7 +262,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Color(0xFF1E293B),
                           ),
                         ),
-                        if (_currentSkillName != null && _currentSkillName!.isNotEmpty)
+                        if (_currentSkillName != null &&
+                            _currentSkillName!.isNotEmpty)
                           Row(
                             children: [
                               Icon(
@@ -256,14 +317,15 @@ class _HomeScreenState extends State<HomeScreen> {
               const Padding(
                 padding: EdgeInsets.only(top: 40),
                 child: Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF2894D7),
-                  ),
+                  child: CircularProgressIndicator(color: Color(0xFF2894D7)),
                 ),
               )
             else if (_currentSkillId == null || _currentSkillId == 0)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 40,
+                ),
                 child: Center(
                   child: Column(
                     children: [
@@ -333,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  childAspectRatio: 0.8,
+                  childAspectRatio: 0.74,
                 ),
                 itemCount: sessionStore.length,
                 itemBuilder: (context, index) {
@@ -373,103 +435,119 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _onTapSession(session),
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 66,
-                  height: 66,
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: cardColor.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    skillIconOf(_currentSkillIcon),
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  session.sessionName,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Session ${index + 1}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // จำนวนแบบฝึกหัดใน Session นี้ หรือความคืบหน้าถ้าทำค้างไว้
-                Builder(builder: (context) {
-                  final answered = _inProgress[session.sessionId];
-                  final bool isInProgress = answered != null;
-                  final Color pillColor =
-                      isInProgress ? const Color(0xFFEA580C) : cardColor;
-                  final total = session.exerciseCount;
-                  final label = isInProgress
-                      ? 'ทำค้าง ${total > 0 && answered > total ? total : answered}/$total'
-                      : '$total ข้อ';
-                  return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: pillColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isInProgress
-                              ? Icons.pause_circle_rounded
-                              : Icons.quiz_rounded,
-                          size: 13,
-                          color: pillColor,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: pillColor,
+      child: Stack(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _onTapSession(session),
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                // เว้นด้านบนเพิ่มให้ป้ายสถานะมุมขวาบนไม่ทับวงกลมไอคอน
+                padding: const EdgeInsets.fromLTRB(16, 28, 16, 16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 66,
+                      height: 66,
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: cardColor.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: Icon(
+                        skillIconOf(_currentSkillIcon),
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
-                  );
-                }),
-              ],
+                    const SizedBox(height: 14),
+                    Text(
+                      session.sessionName,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Session ${index + 1}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // จำนวนแบบฝึกหัดใน Session นี้ หรือความคืบหน้าถ้าทำค้างไว้
+                    Builder(
+                      builder: (context) {
+                        final answered = _inProgress[session.sessionId];
+                        final bool isInProgress = answered != null;
+                        final Color pillColor = isInProgress
+                            ? const Color(0xFFEA580C)
+                            : cardColor;
+                        final total = session.exerciseCount;
+                        final label = isInProgress
+                            ? 'ทำค้าง ${total > 0 && answered > total ? total : answered}/$total'
+                            : '$total ข้อ';
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: pillColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isInProgress
+                                    ? Icons.pause_circle_rounded
+                                    : Icons.quiz_rounded,
+                                size: 13,
+                                color: pillColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: pillColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          // ป้ายสถานะ: ทำแล้ว / ทำค้าง / ยังไม่ทำ (IgnorePointer ให้กดทะลุไปที่การ์ดได้)
+          Positioned(
+            top: 10,
+            right: 10,
+            child: IgnorePointer(child: _buildStatusTag(session.sessionId)),
+          ),
+        ],
       ),
     );
   }
