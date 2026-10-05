@@ -59,6 +59,7 @@ void main() {
       expect(backend.bodyOf('POST admin/skill'), {
         'skill_code': 'TREES',
         'skill_name': 'Binary Trees',
+        'skill_icon': 'school',
         'is_active': 1,
       });
       expect(find.byType(AlertDialog), findsNothing);

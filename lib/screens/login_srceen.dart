@@ -178,6 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString("access_token", json["data"]?["accessToken"] ?? "");
       await prefs.setString("username", username);
+      await prefs.setString("full_name", json["data"]?["full_name"]?.toString() ?? "");
       await prefs.setString("role_name", roleName);
       await prefs.setBool("has_history", hasHistory);
 

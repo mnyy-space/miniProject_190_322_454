@@ -467,7 +467,11 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
-  String _username = 'ผู้ใช้งาน';
+  String _username = '';
+  String _fullName = '';
+  String _roleName = 'user';
+  String? _createDate;
+  int? _userId;
 
   @override
   void initState() {
@@ -477,9 +481,330 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _loadUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _username = prefs.getString('username') ?? 'นักเรียน';
-    });
+    if (mounted) {
+      setState(() {
+        _username = prefs.getString('username') ?? 'ผู้เรียน';
+        _fullName = prefs.getString('full_name') ?? '';
+        _roleName = prefs.getString('role_name') ?? 'user';
+      });
+    }
+
+    try {
+      final res = await AppApi.get('user/profile');
+      final data = AppApi.unwrap(res);
+      if (data != null && mounted) {
+        setState(() {
+          _username = (data['username'] ?? _username).toString();
+          _fullName = (data['full_name'] ?? _fullName).toString();
+          _roleName = (data['role_name'] ?? _roleName).toString();
+          _userId = data['user_id'] is int
+              ? data['user_id']
+              : int.tryParse(data['user_id']?.toString() ?? '');
+          _createDate = data['create_date']?.toString();
+        });
+        await prefs.setString('username', _username);
+        await prefs.setString('full_name', _fullName);
+        await prefs.setString('role_name', _roleName);
+      }
+    } catch (_) {}
+  }
+
+  void _showEditProfileDialog() {
+    final nameController = TextEditingController(text: _fullName);
+    final passwordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool obscurePassword = true;
+    bool obscureConfirm = true;
+    final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+            actionsPadding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    color: Color(0xFF2563EB),
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Text(
+                    'แก้ไขข้อมูลส่วนตัว',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Container(
+              constraints: const BoxConstraints(maxWidth: 440),
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Username (Disabled info)
+                      const Text(
+                        'ชื่อบัญชีผู้ใช้ (Username)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Text(
+                          '@$_username',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ชื่อ - นามสกุล
+                      const Text(
+                        'ชื่อ - นามสกุล',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          hintText: 'กรอกชื่อ - นามสกุล',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF2894D7), width: 1.5),
+                          ),
+                        ),
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty) {
+                            return 'กรุณากรอกชื่อ - นามสกุล';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // รหัสผ่านใหม่
+                      const Text(
+                        'รหัสผ่านใหม่ (ปล่อยว่างถ้าไม่เปลี่ยน)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: passwordController,
+                        obscureText: obscurePassword,
+                        onChanged: (_) => setDialogState(() {}),
+                        decoration: InputDecoration(
+                          hintText: 'อย่างน้อย 4 ตัวอักษร',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF2894D7), width: 1.5),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: const Color(0xFF94A3B8),
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setDialogState(() => obscurePassword = !obscurePassword);
+                            },
+                          ),
+                        ),
+                        validator: (val) {
+                          if (val != null && val.isNotEmpty && val.length < 4) {
+                            return 'รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร';
+                          }
+                          return null;
+                        },
+                      ),
+                      if (passwordController.text.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        const Text(
+                          'ยืนยันรหัสผ่านใหม่',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                        ),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: confirmPasswordController,
+                          obscureText: obscureConfirm,
+                          decoration: InputDecoration(
+                            hintText: 'กรอกรหัสผ่านใหม่อีกครั้ง',
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Color(0xFF2894D7), width: 1.5),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                                color: const Color(0xFF94A3B8),
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                setDialogState(() => obscureConfirm = !obscureConfirm);
+                              },
+                            ),
+                          ),
+                          validator: (val) {
+                            if (passwordController.text.isNotEmpty) {
+                              if (val == null || val.isEmpty) {
+                                return 'กรุณายืนยันรหัสผ่าน';
+                              }
+                              if (val != passwordController.text) {
+                                return 'รหัสผ่านไม่ตรงกัน';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.pop(dialogCtx),
+                child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2894D7),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+                        setDialogState(() => isSaving = true);
+                        try {
+                          final body = <String, dynamic>{
+                            'full_name': nameController.text.trim(),
+                          };
+                          if (passwordController.text.isNotEmpty) {
+                            body['password'] = passwordController.text;
+                          }
+                          await AppApi.put('user/profile', body);
+
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setString('full_name', nameController.text.trim());
+
+                          if (mounted) {
+                            setState(() {
+                              _fullName = nameController.text.trim();
+                            });
+                            Navigator.pop(dialogCtx);
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content: const Row(
+                                  children: [
+                                    Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว',
+                                        style: TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFF10B981),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                margin: const EdgeInsets.all(16),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setDialogState(() => isSaving = false);
+                          if (mounted) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content: Text('บันทึกไม่สำเร็จ: $e'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text('บันทึกข้อมูล', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _handleLogout() {
@@ -521,6 +846,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isAdmin = _roleName.toLowerCase() == 'admin';
+    final initials = _fullName.trim().isNotEmpty
+        ? _fullName.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
+        : _username.isNotEmpty ? _username[0].toUpperCase() : 'U';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -544,7 +874,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // ส่วนโปรไฟล์ผู้ใช้
+            // ส่วนโปรไฟล์ผู้ใช้ด้านบน
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -580,34 +910,85 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      size: 42,
-                      color: Colors.white,
+                    child: Center(
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    _username,
+                    _fullName.isNotEmpty ? _fullName : _username,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 19,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0F172A),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 3),
+                  Text(
+                    '@$_username',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
                     ),
-                    child: const Text(
-                      'ผู้เรียน (Student)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2563EB),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isAdmin ? const Color(0xFFEFF6FF) : const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isAdmin ? const Color(0xFFBFDBFE) : const Color(0xFFBBF7D0),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isAdmin ? Icons.admin_panel_settings_rounded : Icons.school_rounded,
+                          size: 14,
+                          color: isAdmin ? const Color(0xFF2563EB) : const Color(0xFF16A34A),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          isAdmin ? 'ผู้ดูแลระบบ (Admin)' : 'ผู้เรียน (Student)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: isAdmin ? const Color(0xFF2563EB) : const Color(0xFF16A34A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // ปุ่มแก้ไขข้อมูลส่วนตัว
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF2894D7),
+                        side: const BorderSide(color: Color(0xFF90CDF4)),
+                        backgroundColor: const Color(0xFFF0F9FF),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: _showEditProfileDialog,
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text(
+                        'แก้ไขข้อมูลส่วนตัว',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -617,33 +998,72 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
             const SizedBox(height: 20),
 
-            // เมนูตั้งค่า & ช่วยเหลือ
+            // การ์ดแสดงข้อมูลผู้ใช้
             Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildProfileTile(
-                    icon: Icons.notifications_none_rounded,
-                    title: 'การแจ้งเตือน',
-                    onTap: () {},
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.account_box_outlined, size: 18, color: Color(0xFF2563EB)),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'ข้อมูลบัญชีผู้ใช้',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
                   ),
-                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                  _buildProfileTile(
-                    icon: Icons.language_rounded,
-                    title: 'ภาษา (Language)',
-                    trailing: 'ไทย',
-                    onTap: () {},
+                  const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                  _buildInfoTile(
+                    icon: Icons.person_outline_rounded,
+                    label: 'ชื่อบัญชี (Username)',
+                    value: _username,
                   ),
-                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                  _buildProfileTile(
-                    icon: Icons.help_outline_rounded,
-                    title: 'ศูนย์ช่วยเหลือ & คู่มือ',
-                    onTap: () {},
+                  const SizedBox(height: 14),
+                  _buildInfoTile(
+                    icon: Icons.badge_outlined,
+                    label: 'ชื่อ - นามสกุล',
+                    value: _fullName.isNotEmpty ? _fullName : '-',
                   ),
+                  const SizedBox(height: 14),
+                  _buildInfoTile(
+                    icon: Icons.shield_outlined,
+                    label: 'บทบาท (Role)',
+                    value: isAdmin ? 'ผู้ดูแลระบบ (Admin)' : 'ผู้เรียน (Student)',
+                  ),
+                  if (_createDate != null && _createDate!.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    _buildInfoTile(
+                      icon: Icons.calendar_today_outlined,
+                      label: 'วันที่สร้างบัญชี',
+                      value: _createDate!,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -685,43 +1105,48 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  Widget _buildProfileTile({
+  Widget _buildInfoTile({
     required IconData icon,
-    required String title,
-    String? trailing,
-    required VoidCallback onTap,
+    required String label,
+    required String value,
   }) {
-    return ListTile(
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(10),
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 16, color: const Color(0xFF64748B)),
         ),
-        child: Icon(icon, color: const Color(0xFF475569), size: 20),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF0F172A),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (trailing != null)
-            Text(
-              trailing,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-            ),
-          const SizedBox(width: 4),
-          const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 20),
-        ],
-      ),
-      onTap: onTap,
+      ],
     );
   }
 }

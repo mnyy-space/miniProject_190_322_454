@@ -19,11 +19,13 @@ class UserRowCallbacks {
 class UserDataTable extends StatelessWidget {
   final List<UserItemData> users;
   final UserRowCallbacks callbacks;
+  final String currentUsername;
 
   const UserDataTable({
     super.key,
     required this.users,
     required this.callbacks,
+    this.currentUsername = '',
   });
 
   @override
@@ -45,6 +47,9 @@ class UserDataTable extends StatelessWidget {
     final initials = user.fullName.trim().isNotEmpty
         ? user.fullName.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join()
         : user.username.isNotEmpty ? user.username[0].toUpperCase() : 'U';
+
+    final bool isCurrentUser = currentUsername.isNotEmpty &&
+        user.username.trim().toLowerCase() == currentUsername.trim().toLowerCase();
 
     return DataRow(
       cells: [
@@ -76,6 +81,25 @@ class UserDataTable extends StatelessWidget {
                   ),
                 ),
               ),
+              if (isCurrentUser) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                  ),
+                  child: const Text(
+                    'คุณ',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -151,11 +175,18 @@ class UserDataTable extends StatelessWidget {
                 tooltip: 'แก้ไขข้อมูลผู้ใช้',
                 onPressed: () => callbacks.onEdit(user),
               ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, size: 19, color: Color(0xFFEF4444)),
-                tooltip: 'ลบผู้ใช้งาน',
-                onPressed: () => callbacks.onDelete(user),
-              ),
+              if (isCurrentUser)
+                const IconButton(
+                  icon: Icon(Icons.delete_outline_rounded, size: 19, color: Color(0xFFCBD5E1)),
+                  tooltip: 'ไม่สามารถลบบัญชีของตัวเองได้',
+                  onPressed: null,
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, size: 19, color: Color(0xFFEF4444)),
+                  tooltip: 'ลบผู้ใช้งาน',
+                  onPressed: () => callbacks.onDelete(user),
+                ),
             ],
           ),
         ),
@@ -168,11 +199,13 @@ class UserDataTable extends StatelessWidget {
 class UserMobileCard extends StatelessWidget {
   final UserItemData user;
   final UserRowCallbacks callbacks;
+  final String currentUsername;
 
   const UserMobileCard({
     super.key,
     required this.user,
     required this.callbacks,
+    this.currentUsername = '',
   });
 
   @override
@@ -180,6 +213,9 @@ class UserMobileCard extends StatelessWidget {
     final initials = user.fullName.trim().isNotEmpty
         ? user.fullName.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join()
         : user.username.isNotEmpty ? user.username[0].toUpperCase() : 'U';
+
+    final bool isCurrentUser = currentUsername.isNotEmpty &&
+        user.username.trim().toLowerCase() == currentUsername.trim().toLowerCase();
 
     return Container(
       decoration: BoxDecoration(
@@ -218,13 +254,38 @@ class UserMobileCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      user.fullName.isEmpty ? '-' : user.fullName,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            user.fullName.isEmpty ? '-' : user.fullName,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ),
+                        if (isCurrentUser) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: const Color(0xFFBFDBFE)),
+                            ),
+                            child: const Text(
+                              'คุณ',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2563EB),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -316,19 +377,21 @@ class UserMobileCard extends StatelessWidget {
                 icon: const Icon(Icons.edit_outlined, size: 16),
                 label: const Text('แก้ไข', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFEF4444),
-                  side: const BorderSide(color: Color(0xFFFECACA)),
-                  backgroundColor: const Color(0xFFFEF2F2),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              if (!isCurrentUser) ...[
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFEF4444),
+                    side: const BorderSide(color: Color(0xFFFECACA)),
+                    backgroundColor: const Color(0xFFFEF2F2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  onPressed: () => callbacks.onDelete(user),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                  label: const Text('ลบ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
-                onPressed: () => callbacks.onDelete(user),
-                icon: const Icon(Icons.delete_outline_rounded, size: 16),
-                label: const Text('ลบ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
+              ],
             ],
           ),
         ],

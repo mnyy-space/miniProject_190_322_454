@@ -85,8 +85,7 @@ void main() {
       final textFields = find.byType(TextFormField);
       await tester.enterText(textFields.at(0), 'newstudent');
       await tester.enterText(textFields.at(1), 'New Student');
-      await tester.enterText(textFields.at(2), 'student@example.com');
-      await tester.enterText(textFields.at(3), '123456');
+      await tester.enterText(textFields.at(2), '123456');
 
       await tester.tap(find.text('บันทึก'));
       await tester.pumpAndSettle();
@@ -95,7 +94,6 @@ void main() {
       final postBody = backend.bodyOf('POST admin/user');
       expect(postBody['username'], 'newstudent');
       expect(postBody['full_name'], 'New Student');
-      expect(postBody['email'], 'student@example.com');
       expect(postBody['role_id'], 1);
     });
 

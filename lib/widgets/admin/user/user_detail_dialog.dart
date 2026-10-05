@@ -71,8 +71,6 @@ class UserDetailDialog extends StatelessWidget {
             const SizedBox(height: 10),
             _buildInfoRow('ชื่อ - นามสกุล:', user.fullName.isEmpty ? '-' : user.fullName),
             const SizedBox(height: 10),
-            _buildInfoRow('อีเมล:', user.email.isEmpty ? '-' : user.email),
-            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

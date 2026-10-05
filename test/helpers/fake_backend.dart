@@ -122,6 +122,24 @@ class FakeBackend {
         : jsonDecode(request.body) as Map<String, dynamic>;
     bodies.add(body);
 
+    if (path == 'user/profile') {
+      if (request.method == 'GET') {
+        return _ok({
+          'user_id': 5,
+          'username': 'Murnee',
+          'full_name': 'Murnee Madsakul',
+          'role_name': 'user',
+          'create_date': '2026-10-03 17:33:21',
+        });
+      }
+      if (request.method == 'PUT') {
+        return _ok({
+          'user_id': 5,
+          'full_name': body['full_name'] ?? 'Murnee Madsakul',
+        });
+      }
+    }
+
     final segments = path.split('/');
     if (segments.length < 2 || segments[0] != 'admin') return _error(404);
 
