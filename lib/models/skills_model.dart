@@ -4,11 +4,13 @@ import 'package:halalsefllearning/utils/skill_icons.dart';
     int skillId = 0;
     String skillName = "";
     String skillIcon = defaultSkillIconName;
+    int sessionCount = 0;
 
     SkillsModel({
       required this.skillId,
       required this.skillName,
       this.skillIcon = defaultSkillIconName,
+      this.sessionCount = 0,
     });
 
     factory SkillsModel.fromJson(Map<String, dynamic> json) {
@@ -16,6 +18,7 @@ import 'package:halalsefllearning/utils/skill_icons.dart';
         skillId: json['skill_id'] as int,
         skillName: json['skill_name'] as String,
         skillIcon: json['skill_icon'] as String? ?? defaultSkillIconName,
+        sessionCount: (json['session_count'] as num?)?.toInt() ?? 0,
         );
     }
   }
