@@ -6,6 +6,7 @@ import 'package:halalsefllearning/models/skills_model.dart';
 import 'package:halalsefllearning/screens/exercise_screen.dart';
 import 'package:halalsefllearning/screens/select_skill_screen.dart';
 import 'package:halalsefllearning/widgets/home_block_widget.dart';
+import 'package:halalsefllearning/utils/exercise_progress_store.dart';
 import 'package:halalsefllearning/utils/skill_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +20,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<SessionsModel> sessionStore = [];
+  // session_id -> จำนวนข้อที่ทำค้างไว้ (เฉพาะ Session ที่ออกกลางคัน)
+  Map<int, int> _inProgress = {};
   int? _currentSkillId;
   String? _currentSkillName;
   String? _currentSkillIcon;
@@ -113,6 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   : "ไม่พบข้อมูล Session ใน Skill นี้";
             }
           });
+          _loadInProgress();
         }
       } else {
         if (mounted) {
@@ -142,8 +146,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _onTapSession(SessionsModel session) {
-    Navigator.push(
+  /// อ่านจำนวนข้อที่ทำค้างไว้ของแต่ละ Session จากในเครื่อง
+  Future<void> _loadInProgress() async {
+    final Map<int, int> result = {};
+    for (final session in sessionStore) {
+      final answers = await ExerciseProgressStore.load(session.sessionId);
+      if (answers.isNotEmpty) result[session.sessionId] = answers.length;
+    }
+    if (mounted) setState(() => _inProgress = result);
+  }
+
+  Future<void> _onTapSession(SessionsModel session) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ExerciseScreen(
@@ -152,6 +166,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+    // กลับมาจากหน้าแบบฝึกหัด (อาจออกกลางคันหรือทำจบ) -> อัปเดตสถานะงานค้าง
+    _loadInProgress();
   }
 
   @override
@@ -410,29 +426,46 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                // จำนวนแบบฝึกหัดใน Session นี้
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: cardColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.quiz_rounded, size: 13, color: cardColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${session.exerciseCount} ข้อ',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: cardColor,
+                // จำนวนแบบฝึกหัดใน Session นี้ หรือความคืบหน้าถ้าทำค้างไว้
+                Builder(builder: (context) {
+                  final answered = _inProgress[session.sessionId];
+                  final bool isInProgress = answered != null;
+                  final Color pillColor =
+                      isInProgress ? const Color(0xFFEA580C) : cardColor;
+                  final total = session.exerciseCount;
+                  final label = isInProgress
+                      ? 'ทำค้าง ${total > 0 && answered > total ? total : answered}/$total'
+                      : '$total ข้อ';
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: pillColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isInProgress
+                              ? Icons.pause_circle_rounded
+                              : Icons.quiz_rounded,
+                          size: 13,
+                          color: pillColor,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                        const SizedBox(width: 4),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: pillColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ],
             ),
           ),

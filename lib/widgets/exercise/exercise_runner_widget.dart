@@ -6,9 +6,16 @@ import 'package:halalsefllearning/utils/skill_icons.dart';
 class ExerciseRunnerWidget extends StatefulWidget {
   final List<ExerciseQuestion> questions;
   final String skillTitle;
-  final bool isPreTest; // ถ้า true = แบบทดสอบก่อนเรียน (ไม่เฉลยทันที), ถ้า false = แบบฝึกจริง (เฉลยทันที)
+  final bool
+  isPreTest; // ถ้า true = แบบทดสอบก่อนเรียน (ไม่เฉลยทันที), ถ้า false = แบบฝึกจริง (เฉลยทันที)
   final VoidCallback? onExit;
   final Function(int score, int total)? onFinish;
+
+  /// คำตอบที่ทำค้างไว้ (exercise_id -> ตอบถูกหรือไม่) ใช้ทำต่อจากข้อที่ยังไม่ได้ตอบ
+  final Map<int, bool> initialAnswers;
+
+  /// เรียกทุกครั้งที่คำตอบเปลี่ยน (ตอบข้อใหม่ / เริ่มใหม่) เพื่อบันทึกงานค้าง
+  final void Function(Map<int, bool> answers)? onProgress;
 
   const ExerciseRunnerWidget({
     super.key,
@@ -17,6 +24,8 @@ class ExerciseRunnerWidget extends StatefulWidget {
     this.isPreTest = false,
     this.onExit,
     this.onFinish,
+    this.initialAnswers = const {},
+    this.onProgress,
   });
 
   @override
@@ -27,7 +36,33 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
   int _currentIndex = 0;
   int? _selectedChoiceIndex;
   bool _isAnswerSubmitted = false;
-  int _score = 0;
+
+  // คำตอบของแต่ละข้อ (exercise_id -> ตอบถูกหรือไม่)
+  final Map<int, bool> _answers = {};
+
+  // คะแนน = จำนวนข้อที่ตอบถูก (นับเฉพาะข้อที่ยังอยู่ในชุดคำถามนี้)
+  int get _score =>
+      widget.questions.where((q) => _answers[q.id] == true).length;
+
+  @override
+  void initState() {
+    super.initState();
+    _answers.addAll(widget.initialAnswers);
+
+    // ทำต่อจากข้อแรกที่ยังไม่ได้ตอบ
+    final firstUnanswered = widget.questions.indexWhere(
+      (q) => !_answers.containsKey(q.id),
+    );
+    if (firstUnanswered >= 0) {
+      _currentIndex = firstUnanswered;
+    } else if (widget.questions.isNotEmpty && _answers.isNotEmpty) {
+      // ตอบครบแล้วแต่ยังไม่ได้กดเสร็จสิ้น -> แสดงสรุปผลเลย
+      _currentIndex = widget.questions.length - 1;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showCompletionDialog();
+      });
+    }
+  }
 
   // สำหรับคำนวณและแสดงผลความคืบหน้า (%)
   double get _progressPercent {
@@ -55,9 +90,9 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
     final selectedChoice = _currentQuestion.choices[_selectedChoiceIndex!];
     final bool isCorrect = selectedChoice.isCorrect;
 
-    if (isCorrect) {
-      _score++;
-    }
+    // บันทึกคำตอบทันทีหลังส่ง เพื่อให้ออกกลางคันแล้วกลับมาทำต่อได้
+    _answers[_currentQuestion.id] = isCorrect;
+    widget.onProgress?.call(Map.of(_answers));
 
     if (widget.isPreTest) {
       // ในโหมด Pre-test: ไปข้อถัดไปทันทีโดยไม่ต้องเฉลยรายข้อ
@@ -100,13 +135,17 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: isPassed ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                color: isPassed
+                    ? const Color(0xFFECFDF5)
+                    : const Color(0xFFFEF2F2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 isPassed ? Icons.emoji_events_rounded : Icons.replay_rounded,
                 size: 44,
-                color: isPassed ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                color: isPassed
+                    ? const Color(0xFF10B981)
+                    : const Color(0xFFEF4444),
               ),
             ),
             const SizedBox(height: 18),
@@ -139,23 +178,49 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                 children: [
                   Column(
                     children: [
-                      const Text('คะแนนที่ได้', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                      const Text(
+                        'คะแนนที่ได้',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('$_score / ${widget.questions.length}',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                      Text(
+                        '$_score / ${widget.questions.length}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
                     ],
                   ),
-                  Container(width: 1, height: 32, color: const Color(0xFFCBD5E1)),
+                  Container(
+                    width: 1,
+                    height: 32,
+                    color: const Color(0xFFCBD5E1),
+                  ),
                   Column(
                     children: [
-                      const Text('คิดเป็น', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                      const Text(
+                        'คิดเป็น',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('${percent.toStringAsFixed(1)}%',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isPassed ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                          )),
+                      Text(
+                        '${percent.toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isPassed
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -168,7 +233,9 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       side: const BorderSide(color: Color(0xFFCBD5E1)),
                     ),
                     onPressed: () {
@@ -177,10 +244,17 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                         _currentIndex = 0;
                         _selectedChoiceIndex = null;
                         _isAnswerSubmitted = false;
-                        _score = 0;
+                        _answers.clear();
                       });
+                      widget.onProgress?.call({});
                     },
-                    child: const Text('ทำใหม่อีกครั้ง', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                    child: const Text(
+                      'ทำใหม่อีกครั้ง',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -191,7 +265,9 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () {
                       Navigator.pop(context);
@@ -201,7 +277,10 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                         widget.onExit!();
                       }
                     },
-                    child: const Text('เสร็จสิ้น', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'เสร็จสิ้น',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
@@ -218,17 +297,25 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('ออกจากแบบฝึกหัด?'),
-        content: const Text('คุณต้องการออกจากแบบฝึกหัดนี้หรือไม่? ความคืบหน้าในครั้งนี้จะถูกบันทึกไว้'),
+        content: Text(
+          'ทำไปแล้ว ${_answers.length} / ${widget.questions.length} ข้อ\n'
+          'ข้อที่ตอบแล้วจะถูกบันทึกไว้ กลับมาทำต่อจากข้อที่ค้างได้',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('ทำต่อ', style: TextStyle(color: Color(0xFF64748B))),
+            child: const Text(
+              'ทำต่อ',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () {
               Navigator.pop(context);
@@ -244,43 +331,49 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
   @override
   Widget build(BuildContext context) {
     if (widget.questions.isEmpty) {
-      return const Scaffold(
-        body: Center(child: Text('ไม่มีโจทย์แบบฝึกหัด')),
-      );
+      return const Scaffold(body: Center(child: Text('ไม่มีโจทย์แบบฝึกหัด')));
     }
 
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 768;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: Column(
-        children: [
-          // 1. Top Bar (ตรงตามภาพที่ 1)
-          _buildTopBar(isMobile),
+    // ปุ่ม Back ของระบบ / ปัดย้อนกลับ ให้ถามยืนยันเหมือนปุ่ม "ออก"
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmExit();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        body: Column(
+          children: [
+            // 1. Top Bar (ตรงตามภาพที่ 1)
+            _buildTopBar(isMobile),
 
-          // 2. Progress Header + Progress Bar
-          _buildProgressHeader(),
+            // 2. Progress Header + Progress Bar
+            _buildProgressHeader(),
 
-          // 3. Question Card & Choices (พื้นที่เลื่อนตรงกลาง)
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 16 : 24,
-                vertical: 20,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 780),
-                  child: _buildQuestionCard(isMobile),
+            // 3. Question Card & Choices (พื้นที่เลื่อนตรงกลาง)
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16 : 24,
+                  vertical: 20,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 780),
+                    child: _buildQuestionCard(isMobile),
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // 4. แถบเฉลย Feedback Sheet ด้านล่าง (แสดงเมื่อกดส่งคำตอบตามภาพที่ 3)
-          if (_isAnswerSubmitted && !widget.isPreTest) _buildFeedbackBottomSheet(),
-        ],
+            // 4. แถบเฉลย Feedback Sheet ด้านล่าง (แสดงเมื่อกดส่งคำตอบตามภาพที่ 3)
+            if (_isAnswerSubmitted && !widget.isPreTest)
+              _buildFeedbackBottomSheet(),
+          ],
+        ),
       ),
     );
   }
@@ -311,7 +404,11 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Center(
-                    child: Icon(Icons.code_rounded, color: Color(0xFF2563EB), size: 18),
+                    child: Icon(
+                      Icons.code_rounded,
+                      color: Color(0xFF2563EB),
+                      size: 18,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -329,7 +426,11 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                   const SizedBox(width: 6),
                   const Text(
                     'Adaptive Learning',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ],
@@ -345,7 +446,10 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                   onTap: _confirmExit,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFDC2626),
                       borderRadius: BorderRadius.circular(8),
@@ -353,11 +457,19 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.logout_rounded, size: 14, color: Colors.white),
+                        Icon(
+                          Icons.logout_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'ออก',
-                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -367,15 +479,26 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                 const SizedBox(width: 8),
 
                 if (!isMobile) ...[
-                  _buildTopBarPill(icon: Icons.help_outline_rounded, label: 'ทัวร์', onTap: () {}),
+                  _buildTopBarPill(
+                    icon: Icons.help_outline_rounded,
+                    label: 'ทัวร์',
+                    onTap: () {},
+                  ),
                   const SizedBox(width: 6),
-                  _buildTopBarPill(icon: Icons.menu_book_rounded, label: 'กฎ', onTap: () {}),
+                  _buildTopBarPill(
+                    icon: Icons.menu_book_rounded,
+                    label: 'กฎ',
+                    onTap: () {},
+                  ),
                   const SizedBox(width: 6),
                 ],
 
                 // Badge ข้อปัจจุบัน
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(8),
@@ -383,7 +506,11 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                   ),
                   child: Text(
                     'ข้อ ${_currentIndex + 1}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2563EB),
+                    ),
                   ),
                 ),
               ],
@@ -394,7 +521,11 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
     );
   }
 
-  Widget _buildTopBarPill({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _buildTopBarPill({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -410,7 +541,14 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
           children: [
             Icon(icon, size: 13, color: const Color(0xFF475569)),
             const SizedBox(width: 4),
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF475569),
+              ),
+            ),
           ],
         ),
       ),
@@ -429,14 +567,18 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
             children: [
               Text(
                 'ความคืบหน้า Skill: ${widget.skillTitle}',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               Text(
                 _currentIndex == 0 && !_isAnswerSubmitted
                     ? 'ยังไม่เริ่ม'
                     : _isAnswerSubmitted
-                        ? 'ยังไม่เริ่ม → ${_nextProgressPercent.toStringAsFixed(2)}%'
-                        : '${_progressPercent.toStringAsFixed(2)}%',
+                    ? 'ยังไม่เริ่ม → ${_nextProgressPercent.toStringAsFixed(2)}%'
+                    : '${_progressPercent.toStringAsFixed(2)}%',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -449,10 +591,14 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
-              value: (_currentIndex + (_isAnswerSubmitted ? 1 : 0)) / widget.questions.length,
+              value:
+                  (_currentIndex + (_isAnswerSubmitted ? 1 : 0)) /
+                  widget.questions.length,
               minHeight: 7,
               backgroundColor: const Color(0xFFE2E8F0),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF2563EB),
+              ),
             ),
           ),
         ],
@@ -487,10 +633,17 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
             children: [
               Text(
                 'ข้อ ${_currentIndex + 1} / ${widget.questions.length}',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFFCBD5E1)),
@@ -498,17 +651,28 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(skillIconOf(_currentQuestion.skillIcon), size: 14, color: const Color(0xFF475569)),
+                    Icon(
+                      skillIconOf(_currentQuestion.skillIcon),
+                      size: 14,
+                      color: const Color(0xFF475569),
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       _currentQuestion.skillName,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF475569),
+                      ),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF9C3),
                   borderRadius: BorderRadius.circular(20),
@@ -516,7 +680,11 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                 ),
                 child: Text(
                   'Level ${_currentQuestion.level} • ตัวเลือก',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF854D0E)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF854D0E),
+                  ),
                 ),
               ),
             ],
@@ -548,7 +716,8 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
           const SizedBox(height: 18),
 
           // 3. กล่อง Code Block (ถ้ามี Snippet โค้ด)
-          if (_currentQuestion.codeSnippet != null && _currentQuestion.codeSnippet!.isNotEmpty) ...[
+          if (_currentQuestion.codeSnippet != null &&
+              _currentQuestion.codeSnippet!.isNotEmpty) ...[
             CodeBlockWidget(
               code: _currentQuestion.codeSnippet!,
               language: _currentQuestion.codeLanguage,
@@ -581,8 +750,13 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                       : const Color(0xFF0256B8), // สีน้ำเงินเมื่อเลือกแล้ว
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: _selectedChoiceIndex == null ? null : _submitAnswer,
                 iconAlignment: IconAlignment.end,
@@ -618,7 +792,11 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
         textColor = const Color(0xFF065F46);
         badgeColor = const Color(0xFF10B981);
         badgeTextColor = Colors.white;
-        trailingIcon = const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 22);
+        trailingIcon = const Icon(
+          Icons.check_circle_rounded,
+          color: Color(0xFF10B981),
+          size: 22,
+        );
       } else if (isSelected && !choice.isCorrect) {
         // ข้อที่ตอบผิด (สีแดงตามรูปที่ 3)
         backgroundColor = const Color(0xFFFEF2F2);
@@ -626,7 +804,11 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
         textColor = const Color(0xFF991B1B);
         badgeColor = const Color(0xFFEF4444);
         badgeTextColor = Colors.white;
-        trailingIcon = const Icon(Icons.cancel_rounded, color: Color(0xFFEF4444), size: 22);
+        trailingIcon = const Icon(
+          Icons.cancel_rounded,
+          color: Color(0xFFEF4444),
+          size: 22,
+        );
       }
     } else if (isSelected) {
       // เมื่อกดเลือก (ยังไม่ได้ส่ง)
@@ -694,15 +876,21 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
     final selectedChoice = _currentQuestion.choices[_selectedChoiceIndex!];
     final bool isCorrect = selectedChoice.isCorrect;
 
-    final Color bannerColor = isCorrect ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2);
-    final Color mainColor = isCorrect ? const Color(0xFF059669) : const Color(0xFFDC2626);
+    final Color bannerColor = isCorrect
+        ? const Color(0xFFD1FAE5)
+        : const Color(0xFFFEE2E2);
+    final Color mainColor = isCorrect
+        ? const Color(0xFF059669)
+        : const Color(0xFFDC2626);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: bannerColor,
-        border: Border(top: BorderSide(color: mainColor.withValues(alpha: 0.3), width: 1.5)),
+        border: Border(
+          top: BorderSide(color: mainColor.withValues(alpha: 0.3), width: 1.5),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -748,7 +936,11 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                   const SizedBox(height: 2),
                   Text(
                     'ความคืบหน้า ยังไม่เริ่ม → ${_nextProgressPercent.toStringAsFixed(2)}% +${(100 / widget.questions.length).toStringAsFixed(2)}%',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF334155),
+                    ),
                   ),
                   const SizedBox(height: 6),
                   SizedBox(
@@ -773,15 +965,25 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                 backgroundColor: mainColor,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onPressed: _goToNextQuestion,
               iconAlignment: IconAlignment.end,
               icon: const Icon(Icons.arrow_forward_rounded, size: 18),
               label: Text(
-                _currentIndex == widget.questions.length - 1 ? 'ดูผลคะแนน' : 'ข้อถัดไป',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                _currentIndex == widget.questions.length - 1
+                    ? 'ดูผลคะแนน'
+                    : 'ข้อถัดไป',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],

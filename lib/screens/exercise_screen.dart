@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/api/app_api.dart';
 import 'package:halalsefllearning/models/exercise_model.dart';
+import 'package:halalsefllearning/utils/exercise_progress_store.dart';
 import 'package:halalsefllearning/widgets/exercise/exercise_runner_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,6 +28,32 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   List<ExerciseQuestion> _questions = [];
   bool _isLoading = true;
   String? _errorMessage;
+
+  // งานที่ทำค้างไว้ของ Session นี้ (exercise_id -> ตอบถูกหรือไม่)
+  Map<int, bool> _savedAnswers = {};
+  // true = ยังต้องถามผู้ใช้ว่าจะทำต่อหรือเริ่มใหม่
+  bool _askResume = false;
+
+  int? get _progressSessionId =>
+      (widget.sessionId != null && widget.sessionId! > 0 && widget.customQuestions == null)
+          ? widget.sessionId
+          : null;
+
+  /// โหลดงานค้าง (เก็บเฉพาะข้อที่ยังอยู่ใน Session) แล้วตัดสินใจว่าต้องถามทำต่อหรือไม่
+  Future<void> _loadSavedProgress(List<ExerciseQuestion> questions) async {
+    final sessionId = _progressSessionId;
+    if (sessionId == null) return;
+    final ids = questions.map((q) => q.id).toSet();
+    final saved = await ExerciseProgressStore.load(sessionId);
+    saved.removeWhere((id, _) => !ids.contains(id));
+    _savedAnswers = saved;
+    _askResume = saved.isNotEmpty;
+  }
+
+  void _saveProgress(Map<int, bool> answers) {
+    final sessionId = _progressSessionId;
+    if (sessionId != null) ExerciseProgressStore.save(sessionId, answers);
+  }
 
   @override
   void initState() {
@@ -69,6 +96,8 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         );
 
         if (!exerciseResponse.isError) {
+          await _loadSavedProgress(exerciseResponse.data);
+          if (!mounted) return;
           setState(() {
             _questions = exerciseResponse.data;
             _isLoading = false;
@@ -218,23 +247,149 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       );
     }
 
+    if (_askResume) {
+      return _buildResumePrompt();
+    }
+
     // เมื่อมีคำถามจริง ให้รันแบบฝึกหัดผ่าน ExerciseRunnerWidget
     return ExerciseRunnerWidget(
       questions: _questions,
       skillTitle: widget.skillTitle,
       isPreTest: widget.isPreTest,
+      initialAnswers: _savedAnswers,
+      onProgress: _saveProgress,
       onExit: () {
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         }
       },
       onFinish: (score, total) async {
+        // ทำจบแล้ว ล้างงานค้างของ Session นี้
+        final sessionId = _progressSessionId;
+        if (sessionId != null) await ExerciseProgressStore.clear(sessionId);
         await _recordHistory();
         if (!context.mounted) return;
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         }
       },
+    );
+  }
+
+  /// หน้าถามว่าจะทำต่อจากที่ค้างไว้ หรือเริ่มทำใหม่ตั้งแต่ข้อแรก
+  Widget _buildResumePrompt() {
+    final answered = _savedAnswers.length;
+    final total = _questions.length;
+    final nextIndex = _questions.indexWhere((q) => !_savedAnswers.containsKey(q.id));
+    final resumeLabel = nextIndex >= 0 ? 'ทำต่อจากข้อ ${nextIndex + 1}' : 'ดูสรุปผล';
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: Text(widget.skillTitle),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
+        elevation: 0,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEFF6FF),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.history_edu_rounded,
+                      size: 38,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'มีแบบฝึกหัดที่ทำค้างไว้',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'ทำไปแล้ว $answered / $total ข้อ',
+                    style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: total == 0 ? 0 : answered / total,
+                      minHeight: 8,
+                      backgroundColor: const Color(0xFFE2E8F0),
+                      color: const Color(0xFF2563EB),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => setState(() => _askResume = false),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: Text(resumeLabel),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        _saveProgress({});
+                        setState(() {
+                          _savedAnswers = {};
+                          _askResume = false;
+                        });
+                      },
+                      icon: const Icon(Icons.restart_alt_rounded),
+                      label: const Text('เริ่มทำใหม่ตั้งแต่ข้อแรก'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF475569),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Color(0xFFCBD5E1)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
