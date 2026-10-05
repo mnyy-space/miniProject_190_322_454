@@ -317,7 +317,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  childAspectRatio: 0.95,
+                  childAspectRatio: 0.8,
                 ),
                 itemCount: sessionStore.length,
                 itemBuilder: (context, index) {
@@ -407,6 +407,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // จำนวนแบบฝึกหัดใน Session นี้
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: cardColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.quiz_rounded, size: 13, color: cardColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${session.exerciseCount} ข้อ',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: cardColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

@@ -2,10 +2,12 @@ class SessionsModel {
 
   int sessionId = 0;
   String sessionName = '';
-  
+  int exerciseCount = 0;
+
   SessionsModel({
     required this.sessionId,
     required this.sessionName,
+    this.exerciseCount = 0,
   });
 
 
@@ -13,6 +15,7 @@ class SessionsModel {
     return SessionsModel(
     sessionId: json['session_id'] is int ? json['session_id'] as int :int.tryParse(json['session_id']?.toString() ?? '') ?? 0 , 
     sessionName: json['session_name'] as String,
+    exerciseCount: (json['exercise_count'] as num?)?.toInt() ?? 0,
     );
   }
 
