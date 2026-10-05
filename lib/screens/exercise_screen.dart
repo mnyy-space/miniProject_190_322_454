@@ -126,8 +126,9 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     }
   }
 
-  /// บันทึกประวัติการทำแบบฝึกหัดลงในตาราง history เมื่อทำเสร็จสิ้น
-  Future<void> _recordHistory() async {
+  /// บันทึกประวัติการทำแบบฝึกหัด (พร้อมคะแนน) ลงตาราง history เมื่อทำเสร็จสิ้น
+  /// คืนค่า null ถ้าบันทึกสำเร็จ หรือข้อความ error ถ้าไม่สำเร็จ
+  Future<String?> _recordHistory(int score, int total) async {
     try {
       int? sweId;
       for (final q in _questions) {
@@ -140,8 +141,11 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       final Map<String, dynamic> body = {};
       if (sweId != null) body['session_with_exercise_id'] = sweId;
       if (widget.sessionId != null) body['session_id'] = widget.sessionId;
+      body['score'] = score;
+      body['total_questions'] = total;
 
-      await AppApi.post("exercise/history", body);
+      // unwrap จะ throw ถ้า HTTP ไม่ใช่ 2xx หรือ isError = true
+      AppApi.unwrap(await AppApi.post("exercise/history", body));
 
       // อัปเดตข้อมูล Session ล่าสุดลง SharedPreferences
       final prefs = await SharedPreferences.getInstance();
@@ -150,9 +154,64 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         await prefs.setInt("latest_session_id", widget.sessionId!);
       }
       await prefs.setString("latest_session_name", widget.skillTitle);
+      return null;
     } catch (e) {
-      // แม้บันทึก history มีปัญหาก็ไม่ขัดขวางการจบแบบฝึกหัดของผู้ใช้
       debugPrint("Failed to record exercise history: $e");
+      return e.toString();
+    }
+  }
+
+  /// ทำครบแล้ว: บันทึกผลลง DB ก่อน แล้วจึงล้างงานค้าง
+  /// ถ้าบันทึกไม่สำเร็จจะเก็บงานค้างไว้ (กลับมากด "ดูสรุปผล" แล้วส่งใหม่ได้) และให้ลองใหม่
+  Future<void> _finishExercise(int score, int total) async {
+    // โหมดทดสอบด้วย customQuestions ไม่มี Session ให้บันทึก
+    if (widget.sessionId == null || widget.sessionId == 0) {
+      if (Navigator.canPop(context)) Navigator.pop(context);
+      return;
+    }
+
+    final error = await _recordHistory(score, total);
+    if (!mounted) return;
+
+    if (error == null) {
+      final sessionId = _progressSessionId;
+      if (sessionId != null) await ExerciseProgressStore.clear(sessionId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('บันทึกผลแล้ว: ได้ $score / $total คะแนน')),
+      );
+      if (Navigator.canPop(context)) Navigator.pop(context);
+      return;
+    }
+
+    final retry = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('บันทึกผลไม่สำเร็จ'),
+        content: Text(
+          'ยังไม่ได้บันทึกคะแนน $score / $total ลงระบบ\n'
+          'คำตอบของคุณยังเก็บไว้ในเครื่อง กลับมาส่งใหม่ภายหลังได้\n\n'
+          'สาเหตุ: $error',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('ไว้ทีหลัง', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('ลองอีกครั้ง'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (retry == true) {
+      await _finishExercise(score, total);
+    } else if (Navigator.canPop(context)) {
+      Navigator.pop(context);
     }
   }
 
@@ -263,16 +322,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
           Navigator.pop(context);
         }
       },
-      onFinish: (score, total) async {
-        // ทำจบแล้ว ล้างงานค้างของ Session นี้
-        final sessionId = _progressSessionId;
-        if (sessionId != null) await ExerciseProgressStore.clear(sessionId);
-        await _recordHistory();
-        if (!context.mounted) return;
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-      },
+      onFinish: _finishExercise,
     );
   }
 

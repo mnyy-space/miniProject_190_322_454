@@ -182,6 +182,37 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
     }
   }
 
+  /// ป้ายคะแนนของแต่ละประวัติ (ผ่าน >= 60% สีเขียว ไม่ผ่านสีส้ม)
+  /// ประวัติเก่าที่ยังไม่ได้เก็บคะแนนแสดงเป็น "เสร็จสิ้น"
+  Widget _buildScoreBadge(HistoryModel item) {
+    final score = item.score;
+    final total = item.totalQuestions;
+    final bool hasScore = score != null && total != null && total > 0;
+    final bool isPassed = hasScore && score / total >= 0.6;
+    final Color fg = !hasScore || isPassed
+        ? const Color(0xFF059669)
+        : const Color(0xFFEA580C);
+    final Color bg = !hasScore || isPassed
+        ? const Color(0xFFECFDF5)
+        : const Color(0xFFFFF7ED);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        hasScore ? '$score/$total คะแนน' : 'เสร็จสิ้น',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: fg,
+        ),
+      ),
+    );
+  }
+
   void _openExercise(HistoryModel item) {
     Navigator.push(
       context,
@@ -430,21 +461,7 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'เสร็จสิ้น',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF059669),
-                        ),
-                      ),
-                    ),
+                    _buildScoreBadge(item),
                   ],
                 ),
               ),
