@@ -10,6 +10,9 @@ class HistoryModel {
   final String skillName;
   final String? skillCode;
   final String skillIcon;
+  // คะแนนที่ได้ / จำนวนข้อทั้งหมด (null สำหรับประวัติเก่าที่ยังไม่ได้เก็บคะแนน)
+  final int? score;
+  final int? totalQuestions;
 
   HistoryModel({
     required this.historyId,
@@ -21,6 +24,8 @@ class HistoryModel {
     required this.skillName,
     this.skillCode,
     this.skillIcon = defaultSkillIconName,
+    this.score,
+    this.totalQuestions,
   });
 
   factory HistoryModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +46,8 @@ class HistoryModel {
       skillName: json['skill_name'] as String? ?? '',
       skillCode: json['skill_code'] as String?,
       skillIcon: json['skill_icon'] as String? ?? defaultSkillIconName,
+      score: (json['score'] as num?)?.toInt(),
+      totalQuestions: (json['total_questions'] as num?)?.toInt(),
     );
   }
 }
