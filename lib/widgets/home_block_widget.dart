@@ -107,8 +107,8 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF5ED1EA),
-                  Color(0xFF2894D7),
+                  Color(0xFF1C5FB8),
+                  Color(0xFF2A3FA0),
                 ],
               ),
             ),
@@ -147,7 +147,7 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF2894D7).withValues(alpha: 0.12),
+                        color: const Color(0xFF1C5FB8).withValues(alpha: 0.12),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),

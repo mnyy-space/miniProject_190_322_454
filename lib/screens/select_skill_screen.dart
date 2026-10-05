@@ -9,6 +9,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const Color _primaryBlue = Color(0xFF1569A8);
 const Color _textDark = Color(0xFF1E2022);
+const LinearGradient _headerGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [Color(0xFF1C5FB8), Color(0xFF2A3FA0)],
+);
 
 class SelectSkillScreen extends StatefulWidget {
   const SelectSkillScreen({super.key});
@@ -107,43 +112,54 @@ class _SelectSkillScreenState extends State<SelectSkillScreen> {
   }
 
   Widget _buildHeader() {
+    final bool canPop = Navigator.canPop(context);
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1C5FB8), Color(0xFF2A3FA0)],
-        ),
+        gradient: _headerGradient,
       ),
       child: SafeArea(
         bottom: false,
-        child: Stack(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (Navigator.canPop(context))
-              Positioned(
-                left: 4,
-                top: 4,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
+            // แถวบน: ปุ่มย้อนกลับ 
             Padding(
-              padding: const EdgeInsets.fromLTRB(28, 40, 28, 44),
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (canPop)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'ย้อนกลับ',
+                    )
+                  else
+                    const SizedBox(width: 48, height: 48),
+                  const SizedBox(width: 48, height: 48),
+                ],
+              ),
+            ),
+
+            // แถวเนื้อหา Hero Header: ไอคอนสมอง + ข้อความ Select Skill จัดกึ่งกลางหน้าจออย่างสมบูรณ์แบบ
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SvgPicture.asset(
                     'assets/select_skill_screen_icon.svg',
-                    width: 72,
-                    height: 90,
+                    width: 68,
+                    height: 84,
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 18),
                   Flexible(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +168,7 @@ class _SelectSkillScreenState extends State<SelectSkillScreen> {
                         RichText(
                           text: const TextSpan(
                             style: TextStyle(
-                              fontSize: 30,
+                              fontSize: 28,
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                               letterSpacing: -0.3,
@@ -166,14 +182,15 @@ class _SelectSkillScreenState extends State<SelectSkillScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           'Choose your preferred\nSkill to continue',
                           style: TextStyle(
-                            fontSize: 12,
-                            height: 1.3,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 13,
+                            height: 1.35,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withValues(alpha: 0.92),
+                            letterSpacing: 0.1,
                           ),
                         ),
                       ],
@@ -320,7 +337,7 @@ class _SelectSkillScreenState extends State<SelectSkillScreen> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          'จำนวนเลเวล : ${skill.sessionCount}',
+                          'จำนวน session : ${skill.sessionCount}',
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -345,6 +362,7 @@ class _SelectSkillScreenState extends State<SelectSkillScreen> {
   }
 
   Widget _buildContinueButton() {
+    final bool isEnabled = _selectedSkillId != null;
     return SafeArea(
       top: false,
       child: Padding(
@@ -352,21 +370,38 @@ class _SelectSkillScreenState extends State<SelectSkillScreen> {
         child: SizedBox(
           width: double.infinity,
           height: 52,
-          child: ElevatedButton(
-            onPressed: _selectedSkillId == null ? null : _onContinue,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryBlue,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: Colors.grey.shade300,
-              disabledForegroundColor: Colors.grey.shade600,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: isEnabled ? _headerGradient : null,
+              color: isEnabled ? null : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: isEnabled
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF1C5FB8).withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
             ),
-            child: const Text(
-              'Continue',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            child: ElevatedButton(
+              onPressed: isEnabled ? _onContinue : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.transparent,
+                disabledForegroundColor: Colors.grey.shade600,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Continue',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
             ),
           ),
         ),
