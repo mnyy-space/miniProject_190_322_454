@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:halalsefllearning/api/app_api.dart';
 import 'package:halalsefllearning/models/skills_model.dart';
 import 'package:halalsefllearning/screens/user_main_layout.dart';
+import 'package:halalsefllearning/utils/skill_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SelectSkillScreen extends StatefulWidget {
@@ -68,6 +69,7 @@ class _SelectSkillScreenState extends State<SelectSkillScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt("selected_skill_id", skill.skillId);
     await prefs.setString("selected_skill_name", skill.skillName);
+    await prefs.setString("selected_skill_icon", skill.skillIcon);
 
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -267,6 +269,12 @@ class _SelectSkillScreenState extends State<SelectSkillScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
             child: Row(
               children: [
+                Icon(
+                  skillIconOf(skill.skillIcon),
+                  color: const Color(0xFF0F6DA8),
+                  size: 30,
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Text(
                     skill.skillName,

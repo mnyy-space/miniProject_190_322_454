@@ -190,6 +190,10 @@ class _LoginScreenState extends State<LoginScreen> {
           "latest_skill_name",
           latestHistory["skill_name"] as String? ?? "",
         );
+        await prefs.setString(
+          "latest_skill_icon",
+          latestHistory["skill_icon"] as String? ?? "",
+        );
         await prefs.setInt(
           "latest_session_id",
           (latestHistory["session_id"] as num?)?.toInt() ?? 0,
@@ -201,6 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         await prefs.remove("latest_skill_id");
         await prefs.remove("latest_skill_name");
+        await prefs.remove("latest_skill_icon");
         await prefs.remove("latest_session_id");
         await prefs.remove("latest_session_name");
       }

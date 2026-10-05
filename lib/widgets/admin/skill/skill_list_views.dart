@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/models/admin/skill_item_data.dart';
 import 'package:halalsefllearning/widgets/admin/common/admin_list_widgets.dart';
+import 'package:halalsefllearning/widgets/admin/skill/skill_icon_picker.dart';
 
 /// callback ของแต่ละแถว Skill ที่ทั้งตารางและการ์ดใช้ร่วมกัน
 class SkillRowCallbacks {
@@ -57,13 +58,20 @@ class SkillDataTable extends StatelessWidget {
           ),
         ),
         DataCell(
-          Text(
-            skill.name,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1E293B),
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SkillIconBadge(iconName: skill.icon, size: 32),
+              const SizedBox(width: 10),
+              Text(
+                skill.name,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ],
           ),
         ),
         DataCell(AdminTag(skill.tier, tone: AdminTagTone.green)),
@@ -104,6 +112,8 @@ class SkillMobileCard extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SkillIconBadge(iconName: skill.icon, size: 40),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

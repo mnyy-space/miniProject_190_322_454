@@ -1,7 +1,10 @@
+import 'package:halalsefllearning/utils/skill_icons.dart';
+
 class SkillItemData {
   int id;
   String code;
   String name;
+  String icon;
   String tier;
   bool isActive;
 
@@ -9,6 +12,7 @@ class SkillItemData {
     required this.id,
     required this.code,
     required this.name,
+    this.icon = defaultSkillIconName,
     required this.tier,
     required this.isActive,
   });
@@ -20,6 +24,7 @@ class SkillItemData {
       id: item['skill_id'] ?? 0,
       code: item['skill_code'] ?? (name.isEmpty ? 'SKILL' : name.toUpperCase()),
       name: name,
+      icon: (item['skill_icon'] ?? defaultSkillIconName).toString(),
       tier: 'Basic',
       isActive: parseIsActive(item['is_active']),
     );

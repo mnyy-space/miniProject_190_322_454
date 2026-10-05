@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/models/skills_model.dart';
 import 'package:halalsefllearning/screens/sessions_screen_list.dart';
+import 'package:halalsefllearning/utils/skill_icons.dart';
 
 class SkillsCard extends StatelessWidget {
   const SkillsCard({
@@ -82,7 +83,7 @@ class SkillsCard extends StatelessWidget {
                     ],
                   ),
                   child: Icon(
-                    theme['icon'] as IconData,
+                    skillIconOf(skill.skillIcon),
                     color: Colors.white,
                     size: 32,
                   ),

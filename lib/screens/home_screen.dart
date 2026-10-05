@@ -5,6 +5,7 @@ import 'package:halalsefllearning/models/sessions_model.dart';
 import 'package:halalsefllearning/screens/exercise_screen.dart';
 import 'package:halalsefllearning/screens/select_skill_screen.dart';
 import 'package:halalsefllearning/widgets/home_block_widget.dart';
+import 'package:halalsefllearning/utils/skill_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<SessionsModel> sessionStore = [];
   int? _currentSkillId;
   String? _currentSkillName;
+  String? _currentSkillIcon;
   bool isLoading = true;
   String? errorMessage;
 
@@ -43,11 +45,14 @@ class _HomeScreenState extends State<HomeScreen> {
         prefs.getInt("latest_skill_id");
     final skillName = prefs.getString("selected_skill_name") ??
         prefs.getString("latest_skill_name");
+    final skillIcon = prefs.getString("selected_skill_icon") ??
+        prefs.getString("latest_skill_icon");
 
     if (mounted) {
       setState(() {
         _currentSkillId = skillId;
         _currentSkillName = skillName;
+        _currentSkillIcon = skillIcon;
       });
     }
 
@@ -160,13 +165,25 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         if (_currentSkillName != null && _currentSkillName!.isNotEmpty)
-                          Text(
-                            'Skill: $_currentSkillName',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F6DA8),
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                skillIconOf(_currentSkillIcon),
+                                size: 16,
+                                color: const Color(0xFF0F6DA8),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Skill: $_currentSkillName',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F6DA8),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                       ],
                     ),

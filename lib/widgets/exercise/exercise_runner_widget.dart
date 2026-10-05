@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/models/exercise_model.dart';
 import 'package:halalsefllearning/widgets/exercise/code_block_widget.dart';
+import 'package:halalsefllearning/utils/skill_icons.dart';
 
 class ExerciseRunnerWidget extends StatefulWidget {
   final List<ExerciseQuestion> questions;
@@ -494,9 +495,16 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFFCBD5E1)),
                 ),
-                child: Text(
-                  _currentQuestion.skillName,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(skillIconOf(_currentQuestion.skillIcon), size: 14, color: const Color(0xFF475569)),
+                    const SizedBox(width: 6),
+                    Text(
+                      _currentQuestion.skillName,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                    ),
+                  ],
                 ),
               ),
               Container(

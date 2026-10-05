@@ -6,6 +6,7 @@ import 'package:halalsefllearning/models/history_model.dart';
 import 'package:halalsefllearning/screens/exercise_screen.dart';
 import 'package:halalsefllearning/screens/login_srceen.dart';
 import 'package:halalsefllearning/screens/home_screen.dart';
+import 'package:halalsefllearning/utils/skill_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserMainLayout extends StatefulWidget {
@@ -392,13 +393,24 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
                                   color: const Color(0xFFF1F5F9),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: Text(
-                                  item.skillName,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF475569),
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      skillIconOf(item.skillIcon),
+                                      size: 12,
+                                      color: const Color(0xFF475569),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      item.skillName,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF475569),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               const SizedBox(width: 8),

@@ -1,3 +1,5 @@
+import 'package:halalsefllearning/utils/skill_icons.dart';
+
 class HistoryModel {
   final int historyId;
   final int userId;
@@ -7,6 +9,7 @@ class HistoryModel {
   final int skillId;
   final String skillName;
   final String? skillCode;
+  final String skillIcon;
 
   HistoryModel({
     required this.historyId,
@@ -17,6 +20,7 @@ class HistoryModel {
     required this.skillId,
     required this.skillName,
     this.skillCode,
+    this.skillIcon = defaultSkillIconName,
   });
 
   factory HistoryModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +40,7 @@ class HistoryModel {
       skillId: (json['skill_id'] as num?)?.toInt() ?? 0,
       skillName: json['skill_name'] as String? ?? '',
       skillCode: json['skill_code'] as String?,
+      skillIcon: json['skill_icon'] as String? ?? defaultSkillIconName,
     );
   }
 }

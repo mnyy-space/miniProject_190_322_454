@@ -1,17 +1,21 @@
+import 'package:halalsefllearning/utils/skill_icons.dart';
 
   class SkillsModel {
     int skillId = 0;
     String skillName = "";
+    String skillIcon = defaultSkillIconName;
 
     SkillsModel({
       required this.skillId,
       required this.skillName,
+      this.skillIcon = defaultSkillIconName,
     });
 
     factory SkillsModel.fromJson(Map<String, dynamic> json) {
       return SkillsModel(
         skillId: json['skill_id'] as int,
-        skillName: json['skill_name'] as String
+        skillName: json['skill_name'] as String,
+        skillIcon: json['skill_icon'] as String? ?? defaultSkillIconName,
         );
     }
   }

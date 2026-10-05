@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:halalsefllearning/api/app_api.dart';
 import 'package:halalsefllearning/models/history_model.dart';
 import 'package:halalsefllearning/screens/exercise_screen.dart';
+import 'package:halalsefllearning/utils/skill_icons.dart';
 
 class HomeBlockWidget extends StatefulWidget {
   const HomeBlockWidget({super.key});
@@ -14,6 +15,7 @@ class HomeBlockWidget extends StatefulWidget {
 
 class _HomeBlockWidgetState extends State<HomeBlockWidget> {
   String? _latestSkillName;
+  String? _latestSkillIcon;
   int? _latestSessionId;
   String? _latestSessionName;
 
@@ -27,12 +29,14 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
     // 1. อ่านข้อมูลแคชเดิมจาก SharedPreferences มาแสดงผลก่อนทันที
     final prefs = await SharedPreferences.getInstance();
     final cachedSkillName = prefs.getString("latest_skill_name");
+    final cachedSkillIcon = prefs.getString("latest_skill_icon");
     final cachedSessionId = prefs.getInt("latest_session_id");
     final cachedSessionName = prefs.getString("latest_session_name");
 
     if (mounted && cachedSkillName != null && cachedSkillName.isNotEmpty) {
       setState(() {
         _latestSkillName = cachedSkillName;
+        _latestSkillIcon = cachedSkillIcon;
         _latestSessionId = cachedSessionId;
         _latestSessionName = cachedSessionName;
       });
@@ -50,6 +54,7 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
           if (mounted) {
             setState(() {
               _latestSkillName = history.skillName;
+              _latestSkillIcon = history.skillIcon;
               _latestSessionId = history.sessionId;
               _latestSessionName = history.sessionName;
             });
@@ -59,6 +64,7 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
           await prefs.setBool("has_history", true);
           await prefs.setInt("latest_skill_id", history.skillId);
           await prefs.setString("latest_skill_name", history.skillName);
+          await prefs.setString("latest_skill_icon", history.skillIcon);
           await prefs.setInt("latest_session_id", history.sessionId);
           await prefs.setString("latest_session_name", history.sessionName);
         } else if (!latestHistoryRes.isError && latestHistoryRes.data == null) {
@@ -66,6 +72,7 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
           if (mounted) {
             setState(() {
               _latestSkillName = null;
+              _latestSkillIcon = null;
               _latestSessionId = null;
               _latestSessionName = null;
             });
@@ -73,6 +80,7 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
           await prefs.setBool("has_history", false);
           await prefs.remove("latest_skill_id");
           await prefs.remove("latest_skill_name");
+          await prefs.remove("latest_skill_icon");
           await prefs.remove("latest_session_id");
           await prefs.remove("latest_session_name");
         }
@@ -278,8 +286,10 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
                                     color: const Color(0xFF3B82F6),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Icon(
-                                    Icons.menu_book_rounded,
+                                  child: Icon(
+                                    hasLatestSession
+                                        ? skillIconOf(_latestSkillIcon)
+                                        : Icons.menu_book_rounded,
                                     color: Colors.white,
                                     size: 22,
                                   ),

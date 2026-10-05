@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/models/admin/skill_item_data.dart';
+import 'package:halalsefllearning/widgets/admin/skill/skill_icon_picker.dart';
 
 /// Dialog แสดงรายละเอียด Skill
 class SkillDetailDialog extends StatelessWidget {
@@ -11,9 +12,17 @@ class SkillDetailDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(
-        skill.name,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+      title: Row(
+        children: [
+          SkillIconBadge(iconName: skill.icon, size: 40),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              skill.name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,

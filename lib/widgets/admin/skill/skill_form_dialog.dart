@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/models/admin/skill_item_data.dart';
+import 'package:halalsefllearning/utils/skill_icons.dart';
 import 'package:halalsefllearning/widgets/admin/common/admin_form_widgets.dart';
+import 'package:halalsefllearning/widgets/admin/skill/skill_icon_picker.dart';
 
 /// Dialog เพิ่ม / แก้ไข Skill
 /// [onSubmit] รับ body ที่จะส่งไป backend และคืน true ถ้าบันทึกสำเร็จ (dialog จะปิดเอง)
@@ -24,6 +26,7 @@ class _SkillFormDialogState extends State<SkillFormDialog> {
   late final TextEditingController _codeController;
   late final TextEditingController _nameController;
   late String _selectedTier;
+  late String _selectedIcon;
   late bool _isActive;
 
   @override
@@ -33,6 +36,7 @@ class _SkillFormDialogState extends State<SkillFormDialog> {
     _codeController = TextEditingController(text: skill?.code ?? '');
     _nameController = TextEditingController(text: skill?.name ?? '');
     _selectedTier = skill?.tier ?? 'Basic';
+    _selectedIcon = skill?.icon ?? defaultSkillIconName;
     _isActive = skill?.isActive ?? true;
   }
 
@@ -51,6 +55,7 @@ class _SkillFormDialogState extends State<SkillFormDialog> {
     final saved = await widget.onSubmit({
       'skill_code': codeText.isEmpty ? nameText.toUpperCase() : codeText,
       'skill_name': nameText,
+      'skill_icon': _selectedIcon,
       'is_active': _isActive ? 1 : 0,
     });
     if (saved && mounted) Navigator.pop(context);
@@ -68,9 +73,9 @@ class _SkillFormDialogState extends State<SkillFormDialog> {
               color: const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
-              Icons.folder_rounded,
-              color: Color(0xFF2563EB),
+            child: Icon(
+              skillIconOf(_selectedIcon),
+              color: const Color(0xFF2563EB),
               size: 22,
             ),
           ),
@@ -111,6 +116,14 @@ class _SkillFormDialogState extends State<SkillFormDialog> {
                   decoration: adminInputDecoration(
                     hint: 'เช่น Arrays & Linked Lists',
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              AdminLabeledField(
+                label: 'Icon (ไอคอน Skill)',
+                child: SkillIconPicker(
+                  selected: _selectedIcon,
+                  onChanged: (val) => setState(() => _selectedIcon = val),
                 ),
               ),
               const SizedBox(height: 16),

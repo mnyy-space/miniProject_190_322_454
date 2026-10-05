@@ -1,3 +1,5 @@
+import 'package:halalsefllearning/utils/skill_icons.dart';
+
 class ExerciseChoice {
   final String id;
   final String label; // "A", "B", "C", "D"
@@ -28,6 +30,7 @@ class ExerciseQuestion {
   final int id;
   final int? sessionWithExerciseId;
   final String skillName;
+  final String skillIcon;
   final int level;
   final String questionText;
   final String? codeSnippet;
@@ -38,6 +41,7 @@ class ExerciseQuestion {
     required this.id,
     this.sessionWithExerciseId,
     required this.skillName,
+    this.skillIcon = defaultSkillIconName,
     this.level = 1,
     required this.questionText,
     this.codeSnippet,
@@ -99,6 +103,7 @@ class ExerciseQuestion {
       id: exId,
       sessionWithExerciseId: sweId,
       skillName: sName.isNotEmpty ? sName : 'Exercise',
+      skillIcon: (json['skill_icon'] ?? defaultSkillIconName).toString(),
       level: lvl,
       questionText: question,
       codeSnippet: code,
