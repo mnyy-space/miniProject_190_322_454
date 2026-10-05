@@ -437,22 +437,24 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Stack(
         children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _onTapSession(session),
-              borderRadius: BorderRadius.circular(24),
-              child: Padding(
-                // เว้นด้านบนเพิ่มให้ป้ายสถานะมุมขวาบนไม่ทับวงกลมไอคอน
-                padding: const EdgeInsets.fromLTRB(16, 28, 16, 16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 66,
-                      height: 66,
-                      decoration: BoxDecoration(
-                        color: cardColor,
+          Positioned.fill(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _onTapSession(session),
+                borderRadius: BorderRadius.circular(24),
+                child: Padding(
+                  // เว้นด้านบนเพิ่มให้ป้ายสถานะมุมขวาบนไม่ทับวงกลมไอคอน
+                  padding: const EdgeInsets.fromLTRB(16, 28, 16, 16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 66,
+                        height: 66,
+                        decoration: BoxDecoration(
+                          color: cardColor,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -540,6 +542,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+          ),
           ),
           // ป้ายสถานะ: ทำแล้ว / ทำค้าง / ยังไม่ทำ (IgnorePointer ให้กดทะลุไปที่การ์ดได้)
           Positioned(
