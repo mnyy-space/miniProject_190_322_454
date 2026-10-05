@@ -16,7 +16,6 @@ class AdminSidebarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> menuItems = [
       {'title': 'จัดการ Skill', 'icon': Icons.folder_rounded},
-      {'title': 'จัดการ Goal', 'icon': Icons.track_changes_rounded},
       {'title': 'จัดการ Exercise', 'icon': Icons.assignment_rounded},
       {'title': 'จัดการ Session', 'icon': Icons.view_list_rounded},
       {'title': 'จัดการข้อมูลผู้ใช้', 'icon': Icons.people_alt_rounded},

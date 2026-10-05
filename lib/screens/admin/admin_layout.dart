@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:halalsefllearning/screens/login_srceen.dart';
 import 'package:halalsefllearning/screens/admin/admin_exercises_screen.dart';
-import 'package:halalsefllearning/screens/admin/admin_goals_screen.dart';
 import 'package:halalsefllearning/screens/admin/admin_skills_screen.dart';
 import 'package:halalsefllearning/screens/admin/admin_sessions_screen.dart';
 import 'package:halalsefllearning/screens/admin/admin_users_screen.dart';
@@ -22,7 +21,6 @@ class _AdminLayoutState extends State<AdminLayout> {
 
   final List<String> _titles = [
     'จัดการ Skill',
-    'จัดการ Goal',
     'จัดการ Exercise',
     'จัดการ Session',
     'จัดการข้อมูลผู้ใช้',
@@ -30,7 +28,6 @@ class _AdminLayoutState extends State<AdminLayout> {
 
   final List<Widget> _screens = const [
     AdminSkillsScreen(),
-    AdminGoalsScreen(),
     AdminExercisesScreen(),
     AdminSessionsScreen(),
     AdminUsersScreen(),
