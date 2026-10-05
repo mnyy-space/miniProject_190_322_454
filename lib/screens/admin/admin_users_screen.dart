@@ -9,6 +9,7 @@ import 'package:halalsefllearning/widgets/admin/user/user_detail_dialog.dart';
 import 'package:halalsefllearning/widgets/admin/user/user_form_dialog.dart';
 import 'package:halalsefllearning/widgets/admin/user/user_list_views.dart';
 import 'package:halalsefllearning/widgets/admin/user/user_role_stats_cards.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -22,11 +23,23 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
   String _selectedRoleFilter = 'ทุกบทบาท';
+  String _currentUsername = 'admin';
 
   @override
   void initState() {
     super.initState();
+    _loadCurrentUsername();
     _loadUsers();
+  }
+
+  Future<void> _loadCurrentUsername() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final username = prefs.getString('username');
+      if (username != null && username.isNotEmpty && mounted) {
+        setState(() => _currentUsername = username);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadUsers() async {
@@ -244,12 +257,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 itemBuilder: (user) => UserMobileCard(
                   user: user,
                   callbacks: callbacks,
+                  currentUsername: _currentUsername,
                 ),
               )
             else
               UserDataTable(
                 users: users,
                 callbacks: callbacks,
+                currentUsername: _currentUsername,
               ),
           ],
         ),

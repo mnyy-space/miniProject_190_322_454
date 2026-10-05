@@ -21,7 +21,6 @@ class _UserFormDialogState extends State<UserFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _usernameController;
   late final TextEditingController _fullNameController;
-  late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
   late String _selectedRole;
   bool _obscurePassword = true;
@@ -35,7 +34,6 @@ class _UserFormDialogState extends State<UserFormDialog> {
     final user = widget.existingUser;
     _usernameController = TextEditingController(text: user?.username ?? '');
     _fullNameController = TextEditingController(text: user?.fullName ?? '');
-    _emailController = TextEditingController(text: user?.email ?? '');
     _passwordController = TextEditingController();
     _selectedRole = (user?.roleName.toLowerCase() == 'admin') ? 'admin' : 'user';
   }
@@ -44,7 +42,6 @@ class _UserFormDialogState extends State<UserFormDialog> {
   void dispose() {
     _usernameController.dispose();
     _fullNameController.dispose();
-    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -58,8 +55,9 @@ class _UserFormDialogState extends State<UserFormDialog> {
     final body = <String, dynamic>{
       'username': _usernameController.text.trim(),
       'full_name': _fullNameController.text.trim(),
-      'email': _emailController.text.trim(),
       'role_id': roleId,
+      if (widget.existingUser?.email != null && widget.existingUser!.email.isNotEmpty)
+        'email': widget.existingUser!.email,
     };
 
     if (_passwordController.text.isNotEmpty) {
@@ -142,15 +140,7 @@ class _UserFormDialogState extends State<UserFormDialog> {
                 ),
                 const SizedBox(height: 16),
 
-                // Email
-                AdminLabeledField(
-                  label: 'อีเมล (Email)',
-                  child: TextFormField(
-                    controller: _emailController,
-                    decoration: adminInputDecoration(hint: 'เช่น somchai@example.com'),
-                  ),
-                ),
-                const SizedBox(height: 16),
+
 
                 // Role Dropdown
                 AdminLabeledField(

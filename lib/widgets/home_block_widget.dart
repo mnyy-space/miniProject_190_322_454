@@ -115,7 +115,7 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
           ),
         ),
 
-        // เนื้อหาด้านบน: ปุ่ม Back และ Title "Find Your Courses" + Card "Especially For You"
+        // เนื้อหาด้านบน: Title Header + Card "Especially For You"
         SafeArea(
           bottom: false,
           child: Padding(
@@ -123,35 +123,20 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ปุ่มย้อนกลับ (Back Button Icon Container)
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // Title Header Text
                 const Text(
-                  'Find Your Courses',
+                  'ยินดีต้อนรับสู่บทเรียน',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 25,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.4,
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
 
                 // Card สีขาว "Especially For You" หรือ "Continue Learning"
                 Container(
