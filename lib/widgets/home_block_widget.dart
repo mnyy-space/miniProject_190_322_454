@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:halalsefllearning/api/app_api.dart';
 import 'package:halalsefllearning/models/history_model.dart';
-import 'package:halalsefllearning/screens/exercise_screen.dart';
 import 'package:halalsefllearning/utils/skill_icons.dart';
 
 class HomeBlockWidget extends StatefulWidget {
@@ -16,7 +15,6 @@ class HomeBlockWidget extends StatefulWidget {
 class _HomeBlockWidgetState extends State<HomeBlockWidget> {
   String? _latestSkillName;
   String? _latestSkillIcon;
-  int? _latestSessionId;
   String? _latestSessionName;
 
   @override
@@ -30,14 +28,12 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
     final prefs = await SharedPreferences.getInstance();
     final cachedSkillName = prefs.getString("latest_skill_name");
     final cachedSkillIcon = prefs.getString("latest_skill_icon");
-    final cachedSessionId = prefs.getInt("latest_session_id");
     final cachedSessionName = prefs.getString("latest_session_name");
 
     if (mounted && cachedSkillName != null && cachedSkillName.isNotEmpty) {
       setState(() {
         _latestSkillName = cachedSkillName;
         _latestSkillIcon = cachedSkillIcon;
-        _latestSessionId = cachedSessionId;
         _latestSessionName = cachedSessionName;
       });
     }
@@ -55,7 +51,6 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
             setState(() {
               _latestSkillName = history.skillName;
               _latestSkillIcon = history.skillIcon;
-              _latestSessionId = history.sessionId;
               _latestSessionName = history.sessionName;
             });
           }
@@ -73,7 +68,6 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
             setState(() {
               _latestSkillName = null;
               _latestSkillIcon = null;
-              _latestSessionId = null;
               _latestSessionName = null;
             });
           }
@@ -178,41 +172,6 @@ class _HomeBlockWidgetState extends State<HomeBlockWidget> {
                                 fontSize: 13,
                                 color: Color(0xFF64748B),
                                 height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            InkWell(
-                              onTap: () {
-                                if (hasLatestSession && _latestSessionId != null && _latestSessionId! > 0) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ExerciseScreen(
-                                        skillTitle: _latestSessionName ?? "แบบฝึกหัด",
-                                        sessionId: _latestSessionId,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE2F6FC),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  hasLatestSession ? 'ทำต่อเลย ➡' : 'Watch Now',
-                                  style: const TextStyle(
-                                    color: Color(0xFF1E88E5),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
                               ),
                             ),
                           ],
