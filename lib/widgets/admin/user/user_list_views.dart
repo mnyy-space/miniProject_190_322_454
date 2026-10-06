@@ -127,31 +127,40 @@ class UserDataTable extends StatelessWidget {
         DataCell(
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 240),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.menu_book_rounded,
-                  size: 15,
-                  color: user.learningContent == '-' ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    user.learningContent == '-' ? 'ยังไม่มีประวัติการเรียน' : user.learningContent,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
+            child: (user.isAdmin && !user.hasLearningContent)
+                ? const Text(
+                    '-',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: user.learningContent == '-'
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF334155),
-                      fontWeight: user.learningContent == '-' ? FontWeight.normal : FontWeight.w500,
+                      fontSize: 14,
+                      color: Color(0xFF94A3B8),
+                      fontWeight: FontWeight.normal,
                     ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.menu_book_rounded,
+                        size: 15,
+                        color: !user.hasLearningContent ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          user.displayLearningContent,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: !user.hasLearningContent
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF334155),
+                            fontWeight: !user.hasLearningContent ? FontWeight.normal : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
 
@@ -316,8 +325,14 @@ class UserMobileCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.menu_book_rounded, size: 16, color: Color(0xFF64748B)),
-                const SizedBox(width: 8),
+                if (!user.isAdmin || user.hasLearningContent) ...[
+                  Icon(
+                    Icons.menu_book_rounded,
+                    size: 16,
+                    color: !user.hasLearningContent ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,13 +347,13 @@ class UserMobileCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        user.learningContent == '-' ? 'ยังไม่มีประวัติการเรียน' : user.learningContent,
+                        user.displayLearningContent,
                         style: TextStyle(
                           fontSize: 13,
-                          color: user.learningContent == '-'
+                          color: !user.hasLearningContent
                               ? const Color(0xFF94A3B8)
                               : const Color(0xFF1E293B),
-                          fontWeight: FontWeight.w500,
+                          fontWeight: !user.hasLearningContent ? FontWeight.normal : FontWeight.w500,
                         ),
                       ),
                     ],

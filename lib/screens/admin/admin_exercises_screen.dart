@@ -81,6 +81,21 @@ class _AdminExercisesScreenState extends State<AdminExercisesScreen> {
     }
   }
 
+  Future<void> _confirmDeleteExercise(ExerciseItemData exercise) async {
+    final confirmed = await showConfirmDeleteDialog(
+      context,
+      title: 'ลบ Exercise',
+      itemName: exercise.description,
+    );
+    if (!confirmed) return;
+    try {
+      AppApi.unwrap(await AppApi.delete('admin/exercise/${exercise.id}'));
+      _loadExercises();
+    } catch (e) {
+      _showError('ลบ Exercise ไม่สำเร็จ: $e');
+    }
+  }
+
   Future<void> _showExerciseFormDialog([ExerciseItemData? existingExercise]) async {
     if (_skillOptions.isEmpty) {
       _showError('ยังไม่มี Skill ให้เลือก กรุณาเพิ่ม Skill ก่อน');
@@ -153,6 +168,7 @@ class _AdminExercisesScreenState extends State<AdminExercisesScreen> {
     final callbacks = ExerciseRowCallbacks(
       onView: _showExerciseDetailDialog,
       onEdit: _showExerciseFormDialog,
+      onDelete: _confirmDeleteExercise,
       onStatusChanged: _changeExerciseStatus,
     );
 

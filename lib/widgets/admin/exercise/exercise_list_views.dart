@@ -6,11 +6,13 @@ import 'package:halalsefllearning/widgets/admin/common/admin_list_widgets.dart';
 class ExerciseRowCallbacks {
   final void Function(ExerciseItemData exercise) onView;
   final void Function(ExerciseItemData exercise) onEdit;
+  final void Function(ExerciseItemData exercise) onDelete;
   final void Function(ExerciseItemData exercise, bool isActive) onStatusChanged;
 
   const ExerciseRowCallbacks({
     required this.onView,
     required this.onEdit,
+    required this.onDelete,
     required this.onStatusChanged,
   });
 }
@@ -60,6 +62,7 @@ class ExerciseDataTable extends StatelessWidget {
           AdminRowActions(
             onView: () => callbacks.onView(exercise),
             onEdit: () => callbacks.onEdit(exercise),
+            onDelete: () => callbacks.onDelete(exercise),
           ),
         ),
         DataCell(
@@ -122,6 +125,11 @@ class ExerciseMobileCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF2563EB)),
               onPressed: () => callbacks.onEdit(exercise),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, size: 20, color: Color(0xFFDC2626)),
+              tooltip: 'ลบ',
+              onPressed: () => callbacks.onDelete(exercise),
             ),
           ],
         ),

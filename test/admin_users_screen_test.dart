@@ -140,6 +140,28 @@ void main() {
       expect(find.text('แก้ไข'), findsWidgets);
       expect(find.text('ลบ'), findsWidgets);
     });
+
+    adminTestWidgets('แอดมินที่ไม่มีประวัติการเรียนจะแสดงผลเป็น "-" ขณะที่ผู้ใช้ทั่วไปจะแสดง "ยังไม่มีประวัติการเรียน"', (tester, backend) async {
+      // ปรับข้อมูล user ใน backend ให้แอดมินไม่มีประวัติการเรียน และเพิ่ม user ทั่วไปที่ไม่มีประวัติการเรียน
+      backend.users[0]['learning_content'] = '-';
+      backend.users.add({
+        'user_id': 5,
+        'username': 'student_new',
+        'full_name': 'New Student',
+        'email': 'student@example.com',
+        'role_id': 1,
+        'role_name': 'user',
+        'learning_content': '-',
+        'create_date': '2026-10-06 12:00:00',
+      });
+
+      await pumpAdminScreen(tester, const AdminUsersScreen());
+
+      // สำหรับ Admin จะต้องแสดงเป็น '-' และไม่แสดง 'ยังไม่มีประวัติการเรียน'
+      expect(find.text('-'), findsWidgets);
+      // สำหรับ User ทั่วไป (student_new) ที่ไม่มีประวัติ จะต้องแสดง 'ยังไม่มีประวัติการเรียน'
+      expect(find.text('ยังไม่มีประวัติการเรียน'), findsOneWidget);
+    });
   });
 }
 
