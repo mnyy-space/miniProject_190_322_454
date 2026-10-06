@@ -21,6 +21,16 @@ class UserItemData {
 
   bool get isAdmin => roleId == 2 || roleName.toLowerCase() == 'admin';
 
+  bool get hasLearningContent =>
+      learningContent.isNotEmpty && learningContent != '-';
+
+  String get displayLearningContent {
+    if (isAdmin) {
+      return hasLearningContent ? learningContent : '-';
+    }
+    return hasLearningContent ? learningContent : 'ยังไม่มีประวัติการเรียน';
+  }
+
   factory UserItemData.fromJson(Map<String, dynamic> item) {
     final rawContent = item['learning_content']?.toString().trim();
     return UserItemData(

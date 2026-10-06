@@ -136,15 +136,21 @@ class UserDetailDialog extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.menu_book_rounded, size: 16, color: Color(0xFF64748B)),
-                  const SizedBox(width: 8),
+                  if (!user.isAdmin || user.hasLearningContent) ...[
+                    Icon(
+                      Icons.menu_book_rounded,
+                      size: 16,
+                      color: !user.hasLearningContent ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Expanded(
                     child: Text(
-                      user.learningContent == '-' ? 'ยังไม่มีประวัติการเรียน' : user.learningContent,
+                      user.displayLearningContent,
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: user.learningContent == '-' ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
+                        fontWeight: !user.hasLearningContent ? FontWeight.normal : FontWeight.w600,
+                        color: !user.hasLearningContent ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
                         height: 1.4,
                       ),
                     ),
