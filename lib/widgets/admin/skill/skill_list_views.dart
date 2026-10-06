@@ -36,6 +36,7 @@ class SkillDataTable extends StatelessWidget {
         DataColumn(label: Text('Skill code')),
         DataColumn(label: Text('Skill')),
         DataColumn(label: Text('Tier')),
+        DataColumn(label: Text('จำนวนข้อสอบ')),
         DataColumn(label: Text('Actions')),
         DataColumn(label: Text('สถานะ')),
       ],
@@ -75,6 +76,31 @@ class SkillDataTable extends StatelessWidget {
           ),
         ),
         DataCell(AdminTag(skill.tier, tone: AdminTagTone.green)),
+        DataCell(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.quiz_rounded, size: 14, color: Color(0xFF2563EB)),
+                const SizedBox(width: 5),
+                Text(
+                  '${skill.exerciseCount} ข้อ',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1D4ED8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         DataCell(
           AdminRowActions(
             onView: () => callbacks.onView(skill),
@@ -149,6 +175,30 @@ class SkillMobileCard extends StatelessWidget {
         Row(
           children: [
             AdminTag(skill.tier, tone: AdminTagTone.green, dense: true),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.quiz_rounded, size: 12, color: Color(0xFF2563EB)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${skill.exerciseCount} ข้อ',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1D4ED8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const Spacer(),
             IconButton(
               icon: const Icon(

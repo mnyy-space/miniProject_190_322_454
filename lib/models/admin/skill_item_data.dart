@@ -7,6 +7,7 @@ class SkillItemData {
   String icon;
   String tier;
   bool isActive;
+  int exerciseCount;
 
   SkillItemData({
     required this.id,
@@ -15,6 +16,7 @@ class SkillItemData {
     this.icon = defaultSkillIconName,
     required this.tier,
     required this.isActive,
+    this.exerciseCount = 0,
   });
 
   // แปลงข้อมูลจาก GET admin/skill (backend ยังไม่มี tier จึงใช้ค่าเริ่มต้น)
@@ -27,6 +29,7 @@ class SkillItemData {
       icon: (item['skill_icon'] ?? defaultSkillIconName).toString(),
       tier: 'Basic',
       isActive: parseIsActive(item['is_active']),
+      exerciseCount: (item['exercise_count'] as num?)?.toInt() ?? 0,
     );
   }
 }

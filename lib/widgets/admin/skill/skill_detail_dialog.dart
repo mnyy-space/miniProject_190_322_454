@@ -32,6 +32,8 @@ class SkillDetailDialog extends StatelessWidget {
           const SizedBox(height: 6),
           Text('Tier: ${skill.tier}'),
           const SizedBox(height: 6),
+          Text('จำนวนข้อสอบ: ${skill.exerciseCount} ข้อ'),
+          const SizedBox(height: 6),
           Text('สถานะ: ${skill.isActive ? "Active" : "Inactive"}'),
         ],
       ),
