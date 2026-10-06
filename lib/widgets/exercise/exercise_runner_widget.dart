@@ -413,7 +413,7 @@ class _ExerciseRunnerWidgetState extends State<ExerciseRunnerWidget> {
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  'G06 · ALS',
+                  'C06',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,

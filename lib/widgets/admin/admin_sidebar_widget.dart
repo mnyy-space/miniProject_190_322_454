@@ -69,7 +69,7 @@ class AdminSidebarWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'G06 · ALS',
+                      'C06',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
