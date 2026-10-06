@@ -39,6 +39,23 @@ void main() {
       expect(find.text('Stack ทำงานแบบใด'), findsNothing);
     });
 
+    adminTestWidgets('ลบ Exercise หลังยืนยันแล้วส่ง DELETE และโหลดใหม่', (
+      tester,
+      backend,
+    ) async {
+      await pumpAdminScreen(tester, const AdminExercisesScreen());
+
+      await tester.tap(find.text('ลบ').first);
+      await tester.pumpAndSettle();
+      expect(find.text('ลบ Exercise'), findsOneWidget);
+
+      await tester.tap(inDialog(find.text('ลบ')));
+      await tester.pumpAndSettle();
+
+      expect(backend.requests, contains('DELETE admin/exercise/10'));
+      expect(find.text('Exercise ทั้งหมด 2 รายการ'), findsOneWidget);
+    });
+
     adminTestWidgets('dialog รายละเอียดแสดงคำตอบของ FILL_IN_BLANK', (
       tester,
       backend,
