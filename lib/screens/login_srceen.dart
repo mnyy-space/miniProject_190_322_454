@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
@@ -25,9 +26,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  static const Color _primaryBlue = Color(0xFF156EA7);
-  static const Color _accentCyan = Color(0xFF009CDE);
   static const Color _inputFill = Color(0xFFF1EFEF);
+  static const Color _primaryBlue = Color(0xFF1B75E5);
+  static const LinearGradient _primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [_primaryBlue, Color(0xFF192582)],
+  );
 
   @override
   void dispose() {
@@ -255,25 +260,54 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: _inputFill,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: TextFormField(
-            controller: controller,
-            obscureText: obscureText,
-            style: const TextStyle(fontSize: 15, color: Color(0xFF22292F)),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 15,
-              ),
-              suffixIcon: suffixIcon,
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          style: const TextStyle(fontSize: 15, color: Color(0xFF22292F)),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: _inputFill,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 16,
             ),
-            validator: validator,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(
+                color: _primaryBlue,
+                width: 1.5,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(
+                color: Color(0xFFE53935),
+                width: 1.2,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(
+                color: Color(0xFFE53935),
+                width: 1.5,
+              ),
+            ),
+            errorStyle: const TextStyle(
+              fontSize: 12,
+              height: 1.2,
+              color: Color(0xFFE53935),
+            ),
+            suffixIcon: suffixIcon,
           ),
+          validator: validator,
         ),
       ],
     );
@@ -282,61 +316,52 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _primaryBlue,
-      body: SafeArea(
-        bottom: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    children: [
-                      // Top region with Logo
-                      Container(
-                        width: double.infinity,
-                        height: constraints.maxHeight > 700 ? 250 : 210,
-                        alignment: Alignment.center,
-                        child: Container(
-                          width: 125,
-                          height: 125,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.18),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: _primaryGradient,
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final double screenHeight = constraints.maxHeight;
+              final double headerHeight = (screenHeight * 0.33).clamp(220.0, 280.0);
+              final double iconHeight = (headerHeight * 0.42).clamp(100.0, 122.0);
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        // Top region with Logo & Welcome Back
+                        Container(
+                          width: double.infinity,
+                          height: headerHeight,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SvgPicture.asset(
+                                'assets/Logo login.svg',
+                                height: iconHeight,
+                                fit: BoxFit.contain,
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Welcome Back!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 29,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: -0.3,
+                                ),
                               ),
                             ],
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(28),
-                            child: Image.asset(
-                              'assets/logo.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  'logo.png',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => Container(
-                                    color: const Color(0xFFFDE8B3),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.school_rounded,
-                                        size: 48,
-                                        color: Color(0xFF156EA7),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
                         ),
-                      ),
 
                       // White Sheet with top-right curve extending to the bottom edge
                       Expanded(
@@ -345,19 +370,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.only(
-                              topRight: Radius.circular(85),
+                              topRight: Radius.circular(100),
                             ),
                           ),
                           alignment: Alignment.topCenter,
                           child: Center(
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 440),
+                              constraints: const BoxConstraints(maxWidth: 420),
                               child: Padding(
                                 padding: const EdgeInsets.fromLTRB(
                                   28,
-                                  40,
-                                  28,
                                   36,
+                                  28,
+                                  32,
                                 ),
                                 child: Form(
                                   key: _formKey,
@@ -365,16 +390,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      // Centered Title
-                                      const Center(
-                                        child: Text(
-                                          'Login',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 42,
-                                            fontWeight: FontWeight.w900,
-                                            color: Color(0xFF22292F),
-                                            letterSpacing: -0.5,
+                                      // Centered Title with gradient text
+                                      Center(
+                                        child: ShaderMask(
+                                          shaderCallback: (bounds) =>
+                                              _primaryGradient.createShader(bounds),
+                                          child: const Text(
+                                            'Login',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 38,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.white,
+                                              letterSpacing: -0.5,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -382,27 +411,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                       // Centered Subtitle
                                       const Center(
                                         child: Text(
-                                          'Sign in to continue.',
+                                          'Log in to continue your learning journey.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: 13,
                                             color: Color(0xFF8E8E93),
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(height: 32),
+                                      const SizedBox(height: 28),
 
-                                      // Name (Username) field
+                                      // Username field
                                       _buildField(
-                                        label: 'NAME',
+                                        label: 'USERNAME',
                                         controller: _usernameController,
                                         validator: (v) =>
                                             v == null || v.trim().isEmpty
                                             ? 'กรุณากรอก Username'
                                             : null,
                                       ),
-                                      const SizedBox(height: 20),
+                                      const SizedBox(height: 18),
 
                                       // Password field
                                       _buildField(
@@ -426,15 +455,30 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ? 'กรุณากรอก Password'
                                             : null,
                                       ),
-                                      const SizedBox(height: 32),
+                                      const SizedBox(height: 28),
 
-                                      // Log in button
-                                      SizedBox(
+                                      // Log in button with gradient
+                                      Container(
                                         width: double.infinity,
                                         height: 52,
+                                        decoration: BoxDecoration(
+                                          gradient: _primaryGradient,
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: _primaryBlue
+                                                  .withValues(alpha: 0.35),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
                                         child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: _accentCyan,
+                                            backgroundColor:
+                                                Colors.transparent,
+                                            shadowColor: Colors.transparent,
                                             foregroundColor: Colors.white,
                                             elevation: 0,
                                             shape: RoundedRectangleBorder(
@@ -462,7 +506,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 ),
                                         ),
                                       ),
-                                      const SizedBox(height: 32),
+                                      const SizedBox(height: 28),
 
                                       // Don't have an account ? Sign up
                                       Center(
@@ -472,7 +516,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                               WrapCrossAlignment.center,
                                           children: [
                                             const Text(
-                                              "Don’t have an account ? ",
+                                              "Don't have an account ? ",
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 color: Color(0xFF8E8E93),
@@ -486,7 +530,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 'Sign up',
                                                 style: TextStyle(
                                                   fontSize: 13,
-                                                  color: _accentCyan,
+                                                  color: _primaryBlue,
                                                   fontWeight: FontWeight.w700,
                                                 ),
                                               ),
@@ -511,6 +555,7 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
