@@ -7,6 +7,7 @@ import 'package:halalsefllearning/widgets/admin/common/admin_action_bar.dart';
 import 'package:halalsefllearning/widgets/admin/common/admin_form_widgets.dart';
 import 'package:halalsefllearning/widgets/admin/common/admin_list_widgets.dart';
 import 'package:halalsefllearning/widgets/admin/common/admin_page_header.dart';
+import 'package:halalsefllearning/widgets/admin/session/session_detail_dialog.dart';
 import 'package:halalsefllearning/widgets/admin/session/session_form_dialog.dart';
 
 class AdminSessionsScreen extends StatefulWidget {
@@ -96,6 +97,13 @@ class _AdminSessionsScreenState extends State<AdminSessionsScreen> {
         exercises: _exercises,
         onSubmit: (body) => _saveSession(session, body),
       ),
+    );
+  }
+
+  void _showSessionDetail(SessionItemData session) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => SessionDetailDialog(session: session),
     );
   }
 
@@ -215,6 +223,11 @@ class _AdminSessionsScreenState extends State<AdminSessionsScreen> {
     return Wrap(
       spacing: 4,
       children: [
+        TextButton.icon(
+          onPressed: () => _showSessionDetail(session),
+          icon: const Icon(Icons.visibility_outlined, size: 18),
+          label: const Text('ดู'),
+        ),
         TextButton.icon(
           onPressed: () => _showSessionForm(session),
           icon: const Icon(Icons.edit_outlined, size: 18),
